@@ -3,6 +3,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:carpool_app/views/login_page.dart';
 import 'package:carpool_app/views/home_page.dart';
+import 'package:carpool_app/views/myRides_page.dart';
+import 'package:carpool_app/views/createRide_page.dart';
+
 import 'firebase_options.dart';
 
 void main() async {
@@ -23,6 +26,8 @@ class MyApp extends StatelessWidget {
       routes: {
         '/home': (context) => HomePage(),
         '/login': (context) => LoginPage(),
+        '/my_Rides': (context) => MyRidesPage(),
+        '/createRides': (context) => MyRidesPage(),
       },
     );
   }

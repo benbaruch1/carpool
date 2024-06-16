@@ -1,14 +1,23 @@
 import 'package:flutter/material.dart';
-import 'package:carpool_app/views/myRides_page.dart';
-import 'package:carpool_app/views/createRide_page.dart';
+//import 'package:carpool_app/views/notifications_page.dart';
+//import 'package:carpool_app/views/profile_page.dart';
+import 'package:carpool_app/views/home_page.dart';
 
-class HomePage extends StatelessWidget {
+class MyRidesPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Home'),
+        title: Text('My rides'),
         backgroundColor: Colors.green,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.directions_car),
+            onPressed: () {
+              // Add any action you need here
+            },
+          ),
+        ],
       ),
       body: Container(
         decoration: BoxDecoration(
@@ -23,52 +32,37 @@ class HomePage extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
               Text(
-                'Welcome, Ravid',
-                style: TextStyle(fontSize: 24, color: Colors.white),
-              ),
-              SizedBox(height: 20),
-              ElevatedButton.icon(
-                onPressed: () {
-                  // Implement search ride functionality
-                },
-                icon: Icon(Icons.search),
-                label: Text('Search a ride'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                  textStyle: TextStyle(fontSize: 18),
-                ),
-              ),
-              SizedBox(height: 20),
-              ElevatedButton.icon(
-                onPressed: () {
-                  // Implement create ride functionality
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => CreateRidePage()),
-                  );
-                },
-                icon: Icon(Icons.add),
-                label: Text('Create a ride'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                  textStyle: TextStyle(fontSize: 18),
-                ),
+                'My rides',
+                style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black),
               ),
               SizedBox(height: 40),
+              ElevatedButton(
+                onPressed: () {
+                  // Implement navigation to ride details
+                },
+                child: Text('Team 1'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  padding: EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                  textStyle: TextStyle(fontSize: 18),
+                ),
+              ),
+              Spacer(),
               Container(
                 decoration: BoxDecoration(
                   color: Colors.green.shade100,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 padding: EdgeInsets.symmetric(vertical: 20, horizontal: 40),
+                margin: EdgeInsets.only(bottom: 20),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: <Widget>[
                     InkWell(
                       onTap: () {
-                        // Implement navigation to My Rides
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -86,9 +80,13 @@ class HomePage extends StatelessWidget {
                       ),
                     ),
                     InkWell(
-                      onTap: () {
-                        // Implement navigation to Notifications
-                      },
+                      // onTap: () {
+                      //  Navigator.push(
+                      //context,
+                      //MaterialPageRoute(
+                      //    builder: (context) => NotificationsPage()),
+                      //    );
+                      //},
                       child: Column(
                         children: [
                           Icon(Icons.notifications,
@@ -100,9 +98,13 @@ class HomePage extends StatelessWidget {
                       ),
                     ),
                     InkWell(
-                      onTap: () {
-                        // Implement navigation to Profile
-                      },
+                      // onTap: () {
+                      //   Navigator.push(
+                      //       // context,
+                      //       // MaterialPageRoute(
+                      //       //     builder: (context) => ProfilePage()),
+                      //       );
+                      //  },
                       child: Column(
                         children: [
                           Icon(Icons.person, size: 50, color: Colors.green),
@@ -115,35 +117,21 @@ class HomePage extends StatelessWidget {
                   ],
                 ),
               ),
-              SizedBox(height: 40),
-              ElevatedButton(
-                onPressed: () {
-                  // Implement logout functionality
-                },
-                child: Text('Logout'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  padding: EdgeInsets.symmetric(horizontal: 30, vertical: 10),
-                  textStyle: TextStyle(fontSize: 18),
-                ),
-              ),
               SizedBox(height: 20),
               IconButton(
                 icon: Icon(Icons.arrow_back, color: Colors.green, size: 50),
                 onPressed: () {
-                  // Implement back button functionality
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => HomePage()),
+                  );
                 },
               ),
+              SizedBox(height: 20),
             ],
           ),
         ),
       ),
     );
   }
-}
-
-void main() {
-  runApp(MaterialApp(
-    home: HomePage(),
-  ));
 }
