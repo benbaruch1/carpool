@@ -1,21 +1,22 @@
 import 'package:carpool_app/services/firebase_auth_service.dart';
-import 'package:carpool_app/views/register_page.dart';
-import 'package:flutter/material.dart';
-import 'package:carpool_app/views/home_page.dart';
 import 'package:carpool_app/shared/loading.dart';
+import 'package:carpool_app/views/home_page.dart';
+import 'package:carpool_app/views/home_wrapper.dart';
+import 'package:carpool_app/views/login_page.dart';
+import 'package:flutter/material.dart';
 
-class LoginPage extends StatefulWidget {
+class RegisterPage extends StatefulWidget {
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  State<RegisterPage> createState() => _RegisterPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+class _RegisterPageState extends State<RegisterPage> {
+  final _formKey = GlobalKey<FormState>();
   final AuthService _auth = AuthService();
-  bool loading = false;
   String email = '';
   String password = '';
   String error = '';
+  bool loading = false;
 
   @override
   Widget build(BuildContext context) {
@@ -49,6 +50,11 @@ class _LoginPageState extends State<LoginPage> {
                           Text(
                             'Match, Drive, Share',
                             style: TextStyle(fontSize: 18, color: Colors.black),
+                          ),
+                          SizedBox(height: 50),
+                          Text(
+                            'Register',
+                            style: TextStyle(fontSize: 16, color: Colors.black),
                           ),
                           SizedBox(height: 40),
                           TextFormField(
@@ -86,18 +92,25 @@ class _LoginPageState extends State<LoginPage> {
                               if (_formKey.currentState!.validate()) {
                                 setState(() => loading = true);
                                 dynamic result =
-                                    await _auth.signInWithEmailAndPassword(
+                                    await _auth.registerWithEmailAndPassword(
                                         email, password);
                                 if (result == null) {
                                   setState(() {
                                     loading = false;
                                     error =
-                                        'Could not sign in with those credentials';
+                                        'Could not register with those credentials';
                                   });
+                                } else {
+                                  print(
+                                      "[LOG] New user registered succesffully ${email}");
+                                  Navigator.of(context).pushReplacement(
+                                    MaterialPageRoute(
+                                        builder: (context) => HomeWrapper()),
+                                  );
                                 }
                               }
                             },
-                            child: Text('Sign in'),
+                            child: Text('Register'),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.green,
                               padding: EdgeInsets.symmetric(
@@ -112,18 +125,14 @@ class _LoginPageState extends State<LoginPage> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                    builder: (context) => RegisterPage()),
+                                    builder: (context) => HomeWrapper()),
                               );
                             },
                             child: Text(
-                              'Register',
-                              style: TextStyle(color: Colors.green),
+                              'Already registered? Click to login',
+                              style:
+                                  TextStyle(color: Colors.green, fontSize: 18),
                             ),
-                          ),
-                          SizedBox(height: 30),
-                          Image.asset(
-                            'assets/car_image.png', // Ensure the image asset is correctly referenced
-                            height: 200,
                           ),
                           SizedBox(
                             height: 12.0,

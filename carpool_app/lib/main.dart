@@ -1,3 +1,7 @@
+import 'package:carpool_app/models/user.dart';
+import 'package:carpool_app/services/firebase_auth_service.dart';
+import 'package:carpool_app/views/home_wrapper.dart';
+import 'package:carpool_app/views/register_page.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -5,6 +9,7 @@ import 'package:carpool_app/views/login_page.dart';
 import 'package:carpool_app/views/home_page.dart';
 import 'package:carpool_app/views/myRides_page.dart';
 import 'package:carpool_app/views/createRide_page.dart';
+import 'package:provider/provider.dart';
 
 import 'firebase_options.dart';
 
@@ -17,18 +22,23 @@ void main() async {
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Carpool',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
+    return StreamProvider<MyUser?>.value(
+      initialData: null,
+      value: AuthService().user,
+      child: MaterialApp(
+        title: 'Carpool',
+        theme: ThemeData(
+          primarySwatch: Colors.blue,
+        ),
+        initialRoute: '/home',
+        routes: {
+          '/home': (context) => HomeWrapper(),
+          '/login': (context) => LoginPage(),
+          '/my_Rides': (context) => MyRidesPage(),
+          '/createRides': (context) => MyRidesPage(),
+          '/register': (context) => RegisterPage(),
+        },
       ),
-      initialRoute: '/login',
-      routes: {
-        '/home': (context) => HomePage(),
-        '/login': (context) => LoginPage(),
-        '/my_Rides': (context) => MyRidesPage(),
-        '/createRides': (context) => MyRidesPage(),
-      },
     );
   }
 }
