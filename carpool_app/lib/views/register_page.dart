@@ -15,6 +15,9 @@ class _RegisterPageState extends State<RegisterPage> {
   final AuthService _auth = AuthService();
   String email = '';
   String password = '';
+  String firstName = '';
+  String phoneNumber = '';
+  String address = '';
   String error = '';
   bool loading = false;
 
@@ -70,6 +73,48 @@ class _RegisterPageState extends State<RegisterPage> {
                             validator: (val) =>
                                 val!.isEmpty ? 'Enter an email' : null,
                           ),
+                          SizedBox(height: 40),
+                          TextFormField(
+                            onChanged: (val) {
+                              firstName = val;
+                            },
+                            decoration: InputDecoration(
+                              labelText: 'First name',
+                              border: OutlineInputBorder(),
+                              filled: true,
+                              fillColor: Colors.white,
+                            ),
+                            validator: (val) =>
+                                val!.isEmpty ? 'Enter your first name' : null,
+                          ),
+                          SizedBox(height: 40),
+                          TextFormField(
+                            onChanged: (val) {
+                              phoneNumber = val;
+                            },
+                            decoration: InputDecoration(
+                              labelText: 'Phone number',
+                              border: OutlineInputBorder(),
+                              filled: true,
+                              fillColor: Colors.white,
+                            ),
+                            validator: (val) =>
+                                val!.isEmpty ? 'Enter your phone number' : null,
+                          ),
+                          SizedBox(height: 40),
+                          TextFormField(
+                            onChanged: (val) {
+                              address = val;
+                            },
+                            decoration: InputDecoration(
+                              labelText: 'Address',
+                              border: OutlineInputBorder(),
+                              filled: true,
+                              fillColor: Colors.white,
+                            ),
+                            validator: (val) =>
+                                val!.isEmpty ? 'Enter your address' : null,
+                          ),
                           SizedBox(height: 20),
                           TextFormField(
                             onChanged: (val) {
@@ -93,7 +138,11 @@ class _RegisterPageState extends State<RegisterPage> {
                                 setState(() => loading = true);
                                 dynamic result =
                                     await _auth.registerWithEmailAndPassword(
-                                        email, password);
+                                        email,
+                                        password,
+                                        firstName,
+                                        phoneNumber,
+                                        address);
                                 if (result == null) {
                                   setState(() {
                                     loading = false;

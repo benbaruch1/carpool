@@ -10,7 +10,7 @@ class HomeWrapper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final myUser = Provider.of<MyUser?>(context);
-    print("Home_wrapper Launched\n[LOG] User is: ${myUser?.email}");
+    print("Home_wrapper Launched\n[LOG] User is: ${myUser?.uid}");
 
     return myUser == null ? LoginPage() : HomePage();
   }

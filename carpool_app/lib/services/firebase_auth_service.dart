@@ -1,3 +1,4 @@
+import 'package:carpool_app/services/database.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:carpool_app/models/user.dart';
 import 'package:flutter/widgets.dart';
@@ -8,7 +9,7 @@ class AuthService {
 
   // get MyUser(model) from User(Firebase)
   MyUser? _userFromFirebaseUser(User? user) {
-    return user != null ? MyUser(user.email) : null;
+    return user != null ? MyUser(user.uid) : null;
   }
 
   //auth change stream
@@ -30,11 +31,16 @@ class AuthService {
     }
   }
 
-  Future registerWithEmailAndPassword(String email, String password) async {
+  Future registerWithEmailAndPassword(String email, String password,
+      String firstName, String phoneNumber, String address) async {
     try {
       UserCredential result = await _auth.createUserWithEmailAndPassword(
           email: email, password: password);
       User? user = result.user;
+
+      await DatabaseSerivce(user!.uid)
+          .updateUserData(email, firstName, phoneNumber, address);
+
       return _userFromFirebaseUser(user);
     } catch (e) {
       print(e.toString());

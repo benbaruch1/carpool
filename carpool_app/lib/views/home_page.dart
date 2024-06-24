@@ -15,7 +15,7 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     final myUser = Provider.of<MyUser?>(context);
 
-    print("[LOG] Home page opened with user logged in : ${myUser?.email}");
+    print("[LOG] Home page opened with user logged in : ${myUser?.uid}");
     return loading
         ? Loading()
         : Scaffold(
@@ -36,7 +36,7 @@ class HomePage extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: <Widget>[
                     Text(
-                      'Welcome, ${myUser?.email}',
+                      'Welcome, ${myUser?.uid}',
                       style: TextStyle(fontSize: 24, color: Colors.white),
                     ),
                     SizedBox(height: 20),
@@ -145,14 +145,6 @@ class HomePage extends StatelessWidget {
                             EdgeInsets.symmetric(horizontal: 30, vertical: 10),
                         textStyle: TextStyle(fontSize: 18),
                       ),
-                    ),
-                    SizedBox(height: 20),
-                    IconButton(
-                      icon:
-                          Icon(Icons.arrow_back, color: Colors.green, size: 50),
-                      onPressed: () {
-                        // Implement back button functionality
-                      },
                     ),
                   ],
                 ),
