@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:carpool_app/views/myRides_page.dart';
 import 'package:carpool_app/views/createRide_page.dart';
 import 'package:provider/provider.dart';
+import 'package:carpool_app/views/myprofile_page.dart';
 
 class HomePage extends StatelessWidget {
   final AuthService _auth = AuthService();
@@ -118,13 +119,17 @@ class HomePage extends StatelessWidget {
                           ),
                           InkWell(
                             onTap: () {
-                              // Implement navigation to Profile
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => ProfilePage()),
+                              );
                             },
                             child: Column(
                               children: [
                                 Icon(Icons.person,
                                     size: 50, color: Colors.green),
-                                Text('My profile',
+                                Text('My Profile',
                                     style: TextStyle(
                                         fontSize: 16, color: Colors.green)),
                               ],

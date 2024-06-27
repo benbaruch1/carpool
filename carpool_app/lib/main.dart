@@ -3,12 +3,9 @@ import 'package:carpool_app/services/firebase_auth_service.dart';
 import 'package:carpool_app/views/home_wrapper.dart';
 import 'package:carpool_app/views/register_page.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:carpool_app/views/login_page.dart';
-import 'package:carpool_app/views/home_page.dart';
 import 'package:carpool_app/views/myRides_page.dart';
-import 'package:carpool_app/views/createRide_page.dart';
 import 'package:provider/provider.dart';
 
 import 'firebase_options.dart';

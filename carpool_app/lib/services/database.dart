@@ -17,4 +17,13 @@ class DatabaseSerivce {
       'address': address,
     });
   }
+
+  Future updateExistingUserData(
+      String firstName, String phoneNumber, String address) async {
+    return await usersCollection.doc(uid).update({
+      'firstName': firstName,
+      'phoneNumber': phoneNumber,
+      'address': address,
+    });
+  }
 }

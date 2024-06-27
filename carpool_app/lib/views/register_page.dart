@@ -1,8 +1,6 @@
 import 'package:carpool_app/services/firebase_auth_service.dart';
 import 'package:carpool_app/shared/loading.dart';
-import 'package:carpool_app/views/home_page.dart';
 import 'package:carpool_app/views/home_wrapper.dart';
-import 'package:carpool_app/views/login_page.dart';
 import 'package:flutter/material.dart';
 
 class RegisterPage extends StatefulWidget {
