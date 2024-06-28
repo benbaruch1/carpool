@@ -1,5 +1,6 @@
 import 'package:carpool_app/services/firebase_auth_service.dart';
 import 'package:carpool_app/shared/loading.dart';
+import 'package:carpool_app/views/home_page.dart';
 import 'package:carpool_app/views/home_wrapper.dart';
 import 'package:flutter/material.dart';
 
@@ -150,9 +151,10 @@ class _RegisterPageState extends State<RegisterPage> {
                                 } else {
                                   print(
                                       "[LOG] New user registered succesffully ${email}");
-                                  Navigator.of(context).pushReplacement(
+                                  Navigator.of(context).pushAndRemoveUntil(
                                     MaterialPageRoute(
-                                        builder: (context) => HomeWrapper()),
+                                        builder: (context) => HomePage()),
+                                    (Route<dynamic> route) => false,
                                   );
                                 }
                               }

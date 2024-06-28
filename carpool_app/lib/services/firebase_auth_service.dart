@@ -38,7 +38,7 @@ class AuthService {
           email: email, password: password);
       User? user = result.user;
 
-      await DatabaseSerivce(user!.uid)
+      await DatabaseService(user!.uid)
           .updateUserData(email, firstName, phoneNumber, address);
 
       return _userFromFirebaseUser(user);
@@ -55,5 +55,14 @@ class AuthService {
       print(e.toString());
       return null;
     }
+  }
+
+  Future<MyUser?> getMyUserFromUid(String? uid) async {
+    var user = _auth.currentUser;
+    if (user == null) {
+      return null; // Return null if there is no current user
+    }
+    DatabaseService databaseService = DatabaseService(user.uid);
+    return await databaseService.getFullMyUser();
   }
 }

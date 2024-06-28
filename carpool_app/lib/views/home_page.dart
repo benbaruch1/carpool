@@ -7,15 +7,21 @@ import 'package:carpool_app/views/createRide_page.dart';
 import 'package:provider/provider.dart';
 import 'package:carpool_app/views/myprofile_page.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
   final AuthService _auth = AuthService();
+
+  MyUser? myFullUser;
 
   bool loading = false;
 
   @override
   Widget build(BuildContext context) {
     final myUser = Provider.of<MyUser?>(context);
-
     print("[LOG] Home page opened with user logged in : ${myUser?.uid}");
     return loading
         ? Loading()
@@ -36,9 +42,24 @@ class HomePage extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: <Widget>[
-                    Text(
-                      'Welcome, ${myUser?.uid}',
-                      style: TextStyle(fontSize: 24, color: Colors.white),
+                    FutureBuilder<MyUser?>(
+                      future: _auth.getMyUserFromUid(myUser?.uid),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return CircularProgressIndicator();
+                        } else if (snapshot.hasError) {
+                          return Text('Error: ${snapshot.error}');
+                        } else if (!snapshot.hasData || snapshot.data == null) {
+                          return Text('User data not found');
+                        } else {
+                          myFullUser = snapshot.data;
+                          return Text(
+                            'Welcome, ${myFullUser!.firstName}',
+                            style: TextStyle(fontSize: 24, color: Colors.black),
+                          );
+                        }
+                      },
                     ),
                     SizedBox(height: 20),
                     ElevatedButton.icon(
@@ -119,11 +140,7 @@ class HomePage extends StatelessWidget {
                           ),
                           InkWell(
                             onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (context) => ProfilePage()),
-                              );
+                              goToMyProfilePage(context);
                             },
                             child: Column(
                               children: [
@@ -156,6 +173,16 @@ class HomePage extends StatelessWidget {
               ),
             ),
           );
+  }
+
+  void goToMyProfilePage(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => ProfilePage()),
+    ).then((_) {
+      // Refresh the data when coming back from the profile page
+      setState(() {});
+    });
   }
 }
 

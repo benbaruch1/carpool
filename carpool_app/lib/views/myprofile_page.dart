@@ -90,17 +90,17 @@ class _ProfilePageState extends State<ProfilePage> {
                         filled: true,
                       ),
                     ),
-                    SizedBox(height: 10),
-                    TextFormField(
-                      initialValue: "Not working yet",
-                      obscureText: true,
-                      onChanged: (val) {
-                        // setState(() => password = val);
-                      },
-                      decoration: InputDecoration(
-                        hintText: 'Password',
-                      ),
-                    ),
+                    // SizedBox(height: 10),
+                    // TextFormField(
+                    //   initialValue: "Not working yet",
+                    //   obscureText: true,
+                    //   onChanged: (val) {
+                    //     // setState(() => password = val);
+                    //   },
+                    //   decoration: InputDecoration(
+                    //     hintText: 'Password',
+                    //   ),
+                    // ),
                     SizedBox(height: 10),
                     TextFormField(
                       controller: _nameController,
@@ -154,7 +154,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   void _updateProfile() {
     final user = FirebaseAuth.instance.currentUser;
-    DatabaseSerivce databaseSerivce = DatabaseSerivce(user!.uid);
+    DatabaseService databaseSerivce = DatabaseService(user!.uid);
     databaseSerivce
         .updateExistingUserData(_nameController.text,
             _phoneNumberController.text, _addressController.text)
