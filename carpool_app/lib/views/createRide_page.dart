@@ -52,7 +52,7 @@ class _CreateRidePageState extends State<CreateRidePage> {
         return;
       }
 
-      //check if user insert departure && return time for each day
+      // Check if user inserted departure & return time for each selected day
       bool allTimesValid = true;
       selectedDays.forEach((day) {
         if (departureTimes[day]!.text.isEmpty ||
@@ -65,7 +65,7 @@ class _CreateRidePageState extends State<CreateRidePage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
               content: Text(
-                  'Please select departure and return times \n for all selected days'),
+                  'Please select departure and return times for all selected days'),
               duration: Duration(seconds: 2)),
         );
         return;
@@ -77,7 +77,6 @@ class _CreateRidePageState extends State<CreateRidePage> {
           'departureTime': departureTimes[day]!.text,
           'returnTime': returnTimes[day]!.text,
         };
-        //
       });
       User? user = FirebaseAuth.instance.currentUser;
       if (user == null) {
@@ -87,33 +86,37 @@ class _CreateRidePageState extends State<CreateRidePage> {
         return;
       }
       try {
-        DocumentReference rideRef =
-            await FirebaseFirestore.instance.collection('rides').add({
+        DocumentReference groupRef =
+            await FirebaseFirestore.instance.collection('groups').add({
           'rideName': _rideNameController.text,
           'firstMeetingPoint': _firstMeetingPointController.text,
           'secondMeetingPoint': _secondMeetingPointController.text,
           'thirdMeetingPoint': _thirdMeetingPointController.text,
           'selectedDays': selectedDays.toList(),
           'times': times,
-          'userId': user.uid, //save the user.uid inside the ride info
+          'userId': user.uid,
+          'members': [
+            user.uid
+          ], // Add the user who created the group as the first member
         });
 
-        //update the user collection with array of rides (made by hem)
+        // Update the user's collection with array of groups (created by them)
         await FirebaseFirestore.instance
             .collection('users')
-            .doc(user!.uid)
+            .doc(user.uid)
             .update({
-          'rides': FieldValue.arrayUnion([rideRef.id])
+          'rides': FieldValue.arrayUnion([groupRef.id])
         });
+
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Ride created successfully!'),
+          content: Text('Group created successfully!'),
           duration: Duration(seconds: 2),
           backgroundColor: Colors.lightGreen,
         ));
         Navigator.pop(context);
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to create ride: $e')),
+          SnackBar(content: Text('Failed to create group: $e')),
         );
       }
     }
@@ -124,11 +127,14 @@ class _CreateRidePageState extends State<CreateRidePage> {
     final TimeOfDay? picked = await showTimePicker(
       context: context,
       initialTime: TimeOfDay.now(),
+      builder: (BuildContext context, Widget? child) {
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+          child: child!,
+        );
+      },
     );
     if (picked != null) {
-      final now = DateTime.now();
-      final dt =
-          DateTime(now.year, now.month, now.day, picked.hour, picked.minute);
       controller.text =
           "${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}";
     }
@@ -138,7 +144,7 @@ class _CreateRidePageState extends State<CreateRidePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Create ride'),
+        title: Text('Create group'),
         backgroundColor: Colors.green,
       ),
       body: Container(
@@ -159,7 +165,7 @@ class _CreateRidePageState extends State<CreateRidePage> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: <Widget>[
                     Text(
-                      'Create ride',
+                      'Create group',
                       style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
@@ -167,7 +173,7 @@ class _CreateRidePageState extends State<CreateRidePage> {
                     ),
                     SizedBox(height: 20),
                     buildTextFieldWithAsterisk(
-                        'Ride name:', _rideNameController, true),
+                        'Group name:', _rideNameController, true),
                     SizedBox(height: 20),
                     buildTextFieldWithAsterisk('Set first meeting point:',
                         _firstMeetingPointController, true),
@@ -210,7 +216,7 @@ class _CreateRidePageState extends State<CreateRidePage> {
                     SizedBox(height: 20),
                     ElevatedButton(
                       onPressed: _createRide,
-                      child: Text('Create new ride'),
+                      child: Text('Create new group'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green,
                         padding:

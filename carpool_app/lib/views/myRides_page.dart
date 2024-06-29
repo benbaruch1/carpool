@@ -11,7 +11,7 @@ class MyRidesPage extends StatelessWidget {
     }
 
     QuerySnapshot snapshot = await FirebaseFirestore.instance
-        .collection('rides')
+        .collection('groups')
         .where('userId', isEqualTo: user.uid)
         .get();
 
@@ -230,7 +230,39 @@ class FullRideDetailsPage extends StatelessWidget {
                   );
                 }).toList(),
                 SizedBox(height: 10),
-                // Add more details as needed, including members and the "Start drive" button
+                Text('Members:',
+                    style:
+                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                ...ride['members'].map<Widget>((member) {
+                  bool isCreator = member == ride['userId'];
+                  return Row(
+                    children: [
+                      if (isCreator) Icon(Icons.star, color: Colors.green),
+                      FutureBuilder<DocumentSnapshot>(
+                        future: FirebaseFirestore.instance
+                            .collection('users')
+                            .doc(member)
+                            .get(),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return Text('Loading...');
+                          } else if (snapshot.hasError) {
+                            return Text('Error');
+                          } else {
+                            String memberName =
+                                snapshot.data!['firstName'] ?? 'Unknown';
+                            return Text(memberName,
+                                style: TextStyle(
+                                    color: isCreator
+                                        ? Colors.green
+                                        : Colors.black));
+                          }
+                        },
+                      ),
+                    ],
+                  );
+                }).toList(),
                 SizedBox(height: 20),
                 ElevatedButton(
                   onPressed: () {
@@ -244,13 +276,12 @@ class FullRideDetailsPage extends StatelessWidget {
                   ),
                 ),
                 SizedBox(height: 20),
-                /* Center(  
+                /*Center(
                   child: Image.asset(
                     'assets/steering_wheel.png', //this image dosnt work - idk why??
                     height: 100,
                   ),
-                ),
-              */
+                ),*/
               ],
             ),
           ),
