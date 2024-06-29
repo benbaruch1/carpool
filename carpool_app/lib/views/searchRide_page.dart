@@ -14,46 +14,45 @@ class _SearchRidePageState extends State<SearchRidePage> {
   final TextEditingController _rideNameController = TextEditingController();
   final Set<String> selectedDays = {};
   bool _showFullGroups = true;
-  Future<QuerySnapshot>? _searchResults;
+  Future<List<DocumentSnapshot>>? _searchResults;
 
   Future<void> _searchRides() async {
-    Query groups_query = FirebaseFirestore.instance.collection('groups');
-    Query users_query = FirebaseFirestore.instance.collection('users');
+    List<DocumentSnapshot> results = [];
 
     if (_userNameController.text.isNotEmpty) {
-      //users_query=users_query.where('userName',isEqualTo)
-      groups_query =
-          groups_query.where('userName', isEqualTo: _userNameController.text);
-    }
-    if (_meetingPointController.text.isNotEmpty) {
-      groups_query = groups_query
-          .where('firstMeetingPoint', isEqualTo: _meetingPointController.text)
-          .where('secondMeetingPoint', isEqualTo: _meetingPointController.text)
-          .where('thirdMeetingPoint', isEqualTo: _meetingPointController.text);
-    }
-    if (selectedDays.isNotEmpty) {
-      groups_query = groups_query.where('selectedDays',
-          arrayContainsAny: selectedDays.toList());
-    }
-    if (_departureTimeController.text.isNotEmpty) {
-      groups_query = groups_query.where('times.departureTime',
-          isEqualTo: _departureTimeController.text);
-    }
-    if (_rideNameController.text.isNotEmpty) {
-      groups_query =
-          groups_query.where('rideName', isEqualTo: _rideNameController.text);
-    }
-    if (!_showFullGroups) {
-      groups_query = groups_query.where('members', arrayContains: '<5');
+      //search users
+      QuerySnapshot userSnapshot =
+          await FirebaseFirestore.instance.collection('users').get();
+      bool stop = false;
+      //search user by firstName
+      for (var userDoc in userSnapshot.docs) {
+        if (!stop) {
+          print("Checking user: ${userDoc['firstName']}, ID: ${userDoc.id}");
+          //check if firstName==username input
+          if (userDoc['firstName'] == _userNameController.text) {
+            List<dynamic> rideIds = userDoc['rides'];
+            print("Found rides for user ${userDoc['firstName']}: $rideIds");
+            stop = true;
+            //search in group collection for all user rides
+            for (var rideId in rideIds) {
+              DocumentSnapshot groupSnapshot = await FirebaseFirestore.instance
+                  .collection('groups')
+                  .doc(rideId)
+                  .get();
+              if (groupSnapshot.exists) {
+                print(
+                    "Adding group to results: ${groupSnapshot.id}"); // הדפסת הקבוצה שנוספה
+                results.add(groupSnapshot);
+              }
+            }
+          }
+        }
+      }
     }
 
-    QuerySnapshot querySnapshot = await groups_query.get();
-
-    print(
-        "Search query executed. Number of results: ${querySnapshot.docs.length}");
-
+    print("Search results: $results");
     setState(() {
-      _searchResults = Future.value(querySnapshot);
+      _searchResults = Future.value(results);
     });
   }
 
@@ -247,7 +246,7 @@ class _SearchRidePageState extends State<SearchRidePage> {
                   ),
                   SizedBox(height: 20),
                   _searchResults != null
-                      ? FutureBuilder<QuerySnapshot>(
+                      ? FutureBuilder<List<DocumentSnapshot>>(
                           future: _searchResults,
                           builder: (context, snapshot) {
                             if (snapshot.connectionState ==
@@ -256,16 +255,15 @@ class _SearchRidePageState extends State<SearchRidePage> {
                             } else if (snapshot.hasError) {
                               return Text('Error: ${snapshot.error}');
                             } else if (!snapshot.hasData ||
-                                snapshot.data!.docs.isEmpty) {
+                                snapshot.data!.isEmpty) {
                               return Text('No rides found');
                             } else {
                               return ListView.builder(
                                 shrinkWrap: true,
                                 physics: NeverScrollableScrollPhysics(),
-                                itemCount: snapshot.data!.docs.length,
+                                itemCount: snapshot.data!.length,
                                 itemBuilder: (context, index) {
-                                  DocumentSnapshot ride =
-                                      snapshot.data!.docs[index];
+                                  DocumentSnapshot ride = snapshot.data![index];
                                   return Card(
                                     margin: EdgeInsets.symmetric(
                                         vertical: 10, horizontal: 15),
