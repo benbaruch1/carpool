@@ -10,12 +10,23 @@ class MyRidesPage extends StatelessWidget {
       return [];
     }
 
-    QuerySnapshot snapshot = await FirebaseFirestore.instance
+    QuerySnapshot createdRidesSnapshot = await FirebaseFirestore.instance
         .collection('groups')
         .where('userId', isEqualTo: user.uid)
         .get();
 
-    return snapshot.docs;
+    QuerySnapshot joinedRidesSnapshot = await FirebaseFirestore.instance
+        .collection('groups')
+        .where('members', arrayContains: user.uid)
+        .get();
+
+    // Combine both lists of rides
+    List<DocumentSnapshot> allRides = [
+      ...createdRidesSnapshot.docs,
+      ...joinedRidesSnapshot.docs
+    ];
+
+    return allRides;
   }
 
   void _showRideDetails(BuildContext context, DocumentSnapshot ride) {
