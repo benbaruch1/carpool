@@ -105,7 +105,7 @@ class _CreateRidePageState extends State<CreateRidePage> {
             .collection('users')
             .doc(user.uid)
             .update({
-          'rides': FieldValue.arrayUnion([groupRef.id])
+          'groups': FieldValue.arrayUnion([groupRef.id])
         });
 
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(

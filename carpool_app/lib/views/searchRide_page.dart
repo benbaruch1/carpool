@@ -19,38 +19,68 @@ class _SearchRidePageState extends State<SearchRidePage> {
   Future<void> _searchRides() async {
     List<DocumentSnapshot> results = [];
 
+    bool searchedByUserName = false;
+    bool searchedByMeetingPoint = false;
+
+    // search by user name
     if (_userNameController.text.isNotEmpty) {
-      //search users
-      QuerySnapshot userSnapshot =
-          await FirebaseFirestore.instance.collection('users').get();
-      bool stop = false;
-      //search user by firstName
-      for (var userDoc in userSnapshot.docs) {
-        if (!stop) {
-          print("Checking user: ${userDoc['firstName']}, ID: ${userDoc.id}");
-          //check if firstName==username input
-          if (userDoc['firstName'] == _userNameController.text) {
-            List<dynamic> rideIds = userDoc['rides'];
-            print("Found rides for user ${userDoc['firstName']}: $rideIds");
-            stop = true;
-            //search in group collection for all user rides
-            for (var rideId in rideIds) {
-              DocumentSnapshot groupSnapshot = await FirebaseFirestore.instance
-                  .collection('groups')
-                  .doc(rideId)
-                  .get();
-              if (groupSnapshot.exists) {
-                print(
-                    "Adding group to results: ${groupSnapshot.id}"); // הדפסת הקבוצה שנוספה
-                results.add(groupSnapshot);
-              }
-            }
+      searchedByUserName = true;
+
+      QuerySnapshot userSnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .where('firstName', isEqualTo: _userNameController.text)
+          .get();
+
+      if (userSnapshot.docs.isNotEmpty) {
+        DocumentSnapshot userDoc = userSnapshot.docs.first;
+        List<dynamic> rideIds = userDoc['groups'];
+
+        for (var rideId in rideIds) {
+          DocumentSnapshot groupSnapshot = await FirebaseFirestore.instance
+              .collection('groups')
+              .doc(rideId)
+              .get();
+          if (groupSnapshot.exists) {
+            results.add(groupSnapshot);
           }
         }
       }
     }
 
-    print("Search results: $results");
+    // search by meeting point
+    if (_meetingPointController.text.isNotEmpty) {
+      searchedByMeetingPoint = true;
+
+      QuerySnapshot groupsSnapshot =
+          await FirebaseFirestore.instance.collection('groups').get();
+
+      List<DocumentSnapshot> meetingPointResults = [];
+      for (var groupDoc in groupsSnapshot.docs) {
+        if (groupDoc['firstMeetingPoint'] == _meetingPointController.text ||
+            groupDoc['secondMeetingPoint'] == _meetingPointController.text ||
+            groupDoc['thirdMeetingPoint'] == _meetingPointController.text) {
+          meetingPointResults.add(groupDoc);
+        }
+      }
+
+      // search by meeting point && by user name
+      if (searchedByUserName) {
+        results = results
+            .where((ride) => meetingPointResults
+                .any((meetingPointRide) => meetingPointRide.id == ride.id))
+            .toList();
+      } else {
+        results = meetingPointResults;
+      }
+    }
+
+    // empty search
+    if (!searchedByUserName && !searchedByMeetingPoint) {
+      QuerySnapshot groupsSnapshot =
+          await FirebaseFirestore.instance.collection('groups').get();
+      results = groupsSnapshot.docs;
+    }
+
     setState(() {
       _searchResults = Future.value(results);
     });
