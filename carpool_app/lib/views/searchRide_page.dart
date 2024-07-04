@@ -1,6 +1,9 @@
+import 'package:carpool_app/models/group.dart';
+import 'package:carpool_app/services/firebase_auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:carpool_app/services/database.dart';
 
 class SearchRidePage extends StatefulWidget {
   @override
@@ -13,81 +16,29 @@ class _SearchRidePageState extends State<SearchRidePage> {
   final TextEditingController _departureTimeController =
       TextEditingController();
   final TextEditingController _rideNameController = TextEditingController();
-  final Set<String> selectedDays = {};
+  final List<String> selectedDays = [];
   bool _showFullGroups = true;
-  Future<List<DocumentSnapshot>>? _searchResults;
+  Future<List<Group>>? _searchResults;
+  final AuthService _auth = AuthService();
+  DatabaseService databaseService =
+      DatabaseService(FirebaseAuth.instance.currentUser!.uid);
 
   Future<void> _searchRides() async {
-    List<DocumentSnapshot> results = [];
-
-    bool searchedByUserName = false;
-    bool searchedByMeetingPoint = false;
-
-    // search by user name
-    if (_userNameController.text.isNotEmpty) {
-      searchedByUserName = true;
-
-      QuerySnapshot userSnapshot = await FirebaseFirestore.instance
-          .collection('users')
-          .where('firstName', isEqualTo: _userNameController.text)
-          .get();
-
-      if (userSnapshot.docs.isNotEmpty) {
-        DocumentSnapshot userDoc = userSnapshot.docs.first;
-        List<dynamic> rideIds = userDoc['groups'];
-
-        for (var rideId in rideIds) {
-          DocumentSnapshot groupSnapshot = await FirebaseFirestore.instance
-              .collection('groups')
-              .doc(rideId)
-              .get();
-          if (groupSnapshot.exists) {
-            results.add(groupSnapshot);
-          }
-        }
-      }
-    }
-
-    // search by meeting point
-    if (_meetingPointController.text.isNotEmpty) {
-      searchedByMeetingPoint = true;
-
-      QuerySnapshot groupsSnapshot =
-          await FirebaseFirestore.instance.collection('groups').get();
-
-      List<DocumentSnapshot> meetingPointResults = [];
-      for (var groupDoc in groupsSnapshot.docs) {
-        if (groupDoc['firstMeetingPoint'] == _meetingPointController.text ||
-            groupDoc['secondMeetingPoint'] == _meetingPointController.text ||
-            groupDoc['thirdMeetingPoint'] == _meetingPointController.text) {
-          meetingPointResults.add(groupDoc);
-        }
-      }
-
-      // search by meeting point && by user name
-      if (searchedByUserName) {
-        results = results
-            .where((ride) => meetingPointResults
-                .any((meetingPointRide) => meetingPointRide.id == ride.id))
-            .toList();
-      } else {
-        results = meetingPointResults;
-      }
-    }
-
-    // empty search
-    if (!searchedByUserName && !searchedByMeetingPoint) {
-      QuerySnapshot groupsSnapshot =
-          await FirebaseFirestore.instance.collection('groups').get();
-      results = groupsSnapshot.docs;
-    }
+    List<Group> results = await databaseService.searchGroups(
+      meetingPoint: _meetingPointController.text,
+      departureTime: _departureTimeController.text,
+      selectedDays: selectedDays,
+      userId: _userNameController.text,
+      //returnTime: _returnTimeController.text,
+      rideName: _rideNameController.text,
+    );
 
     setState(() {
       _searchResults = Future.value(results);
     });
   }
 
-  Future<void> _joinRide(DocumentSnapshot ride) async {
+  Future<void> _joinRide(Group group) async {
     User? currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -96,7 +47,7 @@ class _SearchRidePageState extends State<SearchRidePage> {
       return;
     }
 
-    List<dynamic> members = ride['members'];
+    List<dynamic> members = group.members;
     if (members.length >= 5) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('This ride is full.')),
@@ -115,7 +66,7 @@ class _SearchRidePageState extends State<SearchRidePage> {
 
     await FirebaseFirestore.instance
         .collection('groups')
-        .doc(ride.id)
+        .doc(group.uid)
         .update({'members': members});
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -130,101 +81,101 @@ class _SearchRidePageState extends State<SearchRidePage> {
     });
   }
 
-  void _showRideDetails(BuildContext context, DocumentSnapshot ride) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(ride['rideName']),
-          content: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildRichText(
-                    'First Meeting Point: ', ride['firstMeetingPoint']),
-                _buildRichText(
-                    'Second Meeting Point: ', ride['secondMeetingPoint']),
-                _buildRichText(
-                    'Third Meeting Point: ', ride['thirdMeetingPoint']),
-                _buildRichText(
-                    'Selected Days: ', ride['selectedDays'].join(', ')),
-                ...ride['selectedDays'].map<Widget>((day) {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '$day:',
-                        style: TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                      Text(
-                          '  Departure Time: ${ride['times'][day]['departureTime']}'),
-                      Text(
-                          '  Return Time: ${ride['times'][day]['returnTime']}'),
-                    ],
-                  );
-                }).toList(),
-                Text('Members:', style: TextStyle(fontWeight: FontWeight.bold)),
-                ...ride['members'].map<Widget>((member) {
-                  bool isCreator = member == ride['userId'];
-                  return Row(
-                    children: [
-                      if (isCreator) Icon(Icons.star, color: Colors.green),
-                      FutureBuilder<DocumentSnapshot>(
-                        future: FirebaseFirestore.instance
-                            .collection('users')
-                            .doc(member)
-                            .get(),
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState ==
-                              ConnectionState.waiting) {
-                            return Text('Loading...');
-                          } else if (snapshot.hasError) {
-                            return Text('Error');
-                          } else {
-                            String memberName =
-                                snapshot.data!['firstName'] ?? 'Unknown';
-                            return Text(memberName,
-                                style: TextStyle(
-                                    color: isCreator
-                                        ? Colors.green
-                                        : Colors.black));
-                          }
-                        },
-                      ),
-                    ],
-                  );
-                }).toList(),
-              ],
-            ),
-          ),
-          actions: [
-            if (ride['members'].length < 5)
-              TextButton(
-                child: Text('JOIN'),
-                onPressed: () {
-                  _joinRide(ride);
-                  Navigator.of(context).pop();
-                },
-              ),
-            if (ride['members'].length >= 5)
-              Text(
-                'FULL',
-                style:
-                    TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
-              ),
-            TextButton(
-              child: Text('Close'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
+  // void _showRideDetails(BuildContext context, DocumentSnapshot ride) {
+  //   showDialog(
+  //     context: context,
+  //     builder: (BuildContext context) {
+  //       return AlertDialog(
+  //         title: Text(ride['rideName']),
+  //         content: SingleChildScrollView(
+  //           child: Column(
+  //             crossAxisAlignment: CrossAxisAlignment.start,
+  //             mainAxisSize: MainAxisSize.min,
+  //             children: [
+  //               _buildRichText(
+  //                   'First Meeting Point: ', ride['firstMeetingPoint']),
+  //               _buildRichText(
+  //                   'Second Meeting Point: ', ride['secondMeetingPoint']),
+  //               _buildRichText(
+  //                   'Third Meeting Point: ', ride['thirdMeetingPoint']),
+  //               _buildRichText(
+  //                   'Selected Days: ', ride['selectedDays'].join(', ')),
+  //               ...ride['selectedDays'].map<Widget>((day) {
+  //                 return Column(
+  //                   crossAxisAlignment: CrossAxisAlignment.start,
+  //                   children: [
+  //                     Text(
+  //                       '$day:',
+  //                       style: TextStyle(
+  //                           fontSize: 16, fontWeight: FontWeight.bold),
+  //                     ),
+  //                     Text(
+  //                         '  Departure Time: ${ride['times'][day]['departureTime']}'),
+  //                     Text(
+  //                         '  Return Time: ${ride['times'][day]['returnTime']}'),
+  //                   ],
+  //                 );
+  //               }).toList(),
+  //               Text('Members:', style: TextStyle(fontWeight: FontWeight.bold)),
+  //               ...ride['members'].map<Widget>((member) {
+  //                 bool isCreator = member == ride['userId'];
+  //                 return Row(
+  //                   children: [
+  //                     if (isCreator) Icon(Icons.star, color: Colors.green),
+  //                     FutureBuilder<DocumentSnapshot>(
+  //                       future: FirebaseFirestore.instance
+  //                           .collection('users')
+  //                           .doc(member)
+  //                           .get(),
+  //                       builder: (context, snapshot) {
+  //                         if (snapshot.connectionState ==
+  //                             ConnectionState.waiting) {
+  //                           return Text('Loading...');
+  //                         } else if (snapshot.hasError) {
+  //                           return Text('Error');
+  //                         } else {
+  //                           String memberName =
+  //                               snapshot.data!['firstName'] ?? 'Unknown';
+  //                           return Text(memberName,
+  //                               style: TextStyle(
+  //                                   color: isCreator
+  //                                       ? Colors.green
+  //                                       : Colors.black));
+  //                         }
+  //                       },
+  //                     ),
+  //                   ],
+  //                 );
+  //               }).toList(),
+  //             ],
+  //           ),
+  //         ),
+  //         actions: [
+  //           if (ride['members'].length < 5)
+  //             TextButton(
+  //               child: Text('JOIN'),
+  //               onPressed: () {
+  //                 _joinRide(ride);
+  //                 Navigator.of(context).pop();
+  //               },
+  //             ),
+  //           if (ride['members'].length >= 5)
+  //             Text(
+  //               'FULL',
+  //               style:
+  //                   TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+  //             ),
+  //           TextButton(
+  //             child: Text('Close'),
+  //             onPressed: () {
+  //               Navigator.of(context).pop();
+  //             },
+  //           ),
+  //         ],
+  //       );
+  //     },
+  //   );
+  // }
 
   static Widget _buildRichText(String label, String value) {
     return RichText(
@@ -272,7 +223,7 @@ class _SearchRidePageState extends State<SearchRidePage> {
                     ),
                   ),
                   SizedBox(height: 20),
-                  _buildTextField('User name:', _userNameController),
+                  _buildTextField('User\'s first name:', _userNameController),
                   SizedBox(height: 10),
                   _buildTextField('Meeting point:', _meetingPointController),
                   SizedBox(height: 10),
@@ -338,7 +289,7 @@ class _SearchRidePageState extends State<SearchRidePage> {
                   ),
                   SizedBox(height: 20),
                   _searchResults != null
-                      ? FutureBuilder<List<DocumentSnapshot>>(
+                      ? FutureBuilder<List<Group>>(
                           future: _searchResults,
                           builder: (context, snapshot) {
                             if (snapshot.connectionState ==
@@ -355,14 +306,14 @@ class _SearchRidePageState extends State<SearchRidePage> {
                                 physics: NeverScrollableScrollPhysics(),
                                 itemCount: snapshot.data!.length,
                                 itemBuilder: (context, index) {
-                                  DocumentSnapshot ride = snapshot.data![index];
+                                  Group group = snapshot.data![index];
                                   return Card(
                                     margin: EdgeInsets.symmetric(
                                         vertical: 10, horizontal: 15),
                                     child: ListTile(
                                       contentPadding: EdgeInsets.all(15),
                                       title: Text(
-                                        ride['rideName'],
+                                        group.rideName,
                                         style: TextStyle(
                                             fontSize: 20,
                                             fontWeight: FontWeight.bold),
@@ -372,30 +323,30 @@ class _SearchRidePageState extends State<SearchRidePage> {
                                             CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                              'First Meeting Point: ${ride['firstMeetingPoint']}'),
+                                              'First Meeting Point: ${group.firstMeetingPoint}'),
                                           Text(
-                                              'Second Meeting Point: ${ride['secondMeetingPoint']}'),
+                                              'Second Meeting Point: ${group.secondMeetingPoint}'),
                                           Text(
-                                              'Third Meeting Point: ${ride['thirdMeetingPoint']}'),
+                                              'Third Meeting Point: ${group.thirdMeetingPoint}'),
                                         ],
                                       ),
                                       trailing: Column(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
                                           Text(
-                                              'Members: ${ride['members'].length}/5'),
-                                          if (ride['members'].length < 5)
+                                              'Members: ${group.members.length}/5'),
+                                          if (group.members.length < 5)
                                             TextButton(
                                               child: Text('JOIN'),
                                               onPressed: () {
-                                                _joinRide(ride);
+                                                _joinRide(group);
                                               },
                                               style: TextButton.styleFrom(
                                                 padding: EdgeInsets.symmetric(
                                                     horizontal: 8, vertical: 4),
                                               ),
                                             ),
-                                          if (ride['members'].length >= 5)
+                                          if (group.members.length >= 5)
                                             Text(
                                               'FULL',
                                               style: TextStyle(
@@ -405,7 +356,7 @@ class _SearchRidePageState extends State<SearchRidePage> {
                                         ],
                                       ),
                                       onTap: () {
-                                        _showRideDetails(context, ride);
+                                        // _showRideDetails(context, group);
                                       },
                                     ),
                                   );
