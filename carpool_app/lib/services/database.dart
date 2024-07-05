@@ -149,20 +149,32 @@ class DatabaseService {
         return Group.fromMap(doc.data() as Map<String, dynamic>, doc.id);
       }).toList();
 
+      int desiredTimeInMinutes = convertTimeToMinutes(departureTime);
+
       results.addAll(allGroups.where((group) {
-        bool match = false;
-        group.times.forEach((day, time) {
-          if (time['departureTime'] == departureTime) {
-            match = true;
-          }
+        return group.times.values.any((time) {
+          int groupTimeInMinutes = convertTimeToMinutes(time['departureTime']);
+          return (groupTimeInMinutes - desiredTimeInMinutes).abs() <= 30;
         });
-        return match;
       }).toList());
     }
 
     // Remove duplicates if necessary
-    final uniqueResults = results.toSet().toList();
+    final uniqueResults = removeDuplicateGroups(results);
 
     return uniqueResults;
   }
+}
+
+List<Group> removeDuplicateGroups(List<Group> groups) {
+  Set<String> seenUids = {};
+  return groups.where((group) => seenUids.add(group.uid)).toList();
+}
+
+//calculate the time in minutes
+int convertTimeToMinutes(String time) {
+  List<String> parts = time.split(':');
+  int hours = int.parse(parts[0]);
+  int minutes = int.parse(parts[1]);
+  return hours * 60 + minutes;
 }
