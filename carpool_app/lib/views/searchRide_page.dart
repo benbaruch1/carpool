@@ -1,8 +1,8 @@
 import 'package:carpool_app/models/group.dart';
-import 'package:carpool_app/services/firebase_auth_service.dart';
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:carpool_app/views/group_page.dart';
 import 'package:carpool_app/services/database.dart';
 
 class SearchRidePage extends StatefulWidget {
@@ -19,7 +19,7 @@ class _SearchRidePageState extends State<SearchRidePage> {
   final List<String> selectedDays = [];
   bool _showFullGroups = true;
   Future<List<Group>>? _searchResults;
-  final AuthService _auth = AuthService();
+
   DatabaseService databaseService =
       DatabaseService(FirebaseAuth.instance.currentUser!.uid);
 
@@ -38,156 +38,13 @@ class _SearchRidePageState extends State<SearchRidePage> {
     });
   }
 
-  Future<void> _joinRide(Group group) async {
-    User? currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('You need to be logged in to join a ride.')),
-      );
-      return;
-    }
+  void _navigateToGroupPage(BuildContext context, Group group) {
+    String currentUserId = FirebaseAuth.instance.currentUser!.uid;
 
-    List<dynamic> members = group.members;
-    if (members.length >= 5) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('This ride is full.')),
-      );
-      return;
-    }
-
-    if (members.contains(currentUser.uid)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('You are already a member of this ride.')),
-      );
-      return;
-    }
-
-    members.add(currentUser.uid);
-
-    await FirebaseFirestore.instance
-        .collection('groups')
-        .doc(group.uid)
-        .update({'members': members});
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('You have joined the ride successfully.'),
-        backgroundColor: Colors.green,
-      ),
-    );
-
-    setState(() {
-      _searchRides();
-    });
-  }
-
-  // void _showRideDetails(BuildContext context, DocumentSnapshot ride) {
-  //   showDialog(
-  //     context: context,
-  //     builder: (BuildContext context) {
-  //       return AlertDialog(
-  //         title: Text(ride['rideName']),
-  //         content: SingleChildScrollView(
-  //           child: Column(
-  //             crossAxisAlignment: CrossAxisAlignment.start,
-  //             mainAxisSize: MainAxisSize.min,
-  //             children: [
-  //               _buildRichText(
-  //                   'First Meeting Point: ', ride['firstMeetingPoint']),
-  //               _buildRichText(
-  //                   'Second Meeting Point: ', ride['secondMeetingPoint']),
-  //               _buildRichText(
-  //                   'Third Meeting Point: ', ride['thirdMeetingPoint']),
-  //               _buildRichText(
-  //                   'Selected Days: ', ride['selectedDays'].join(', ')),
-  //               ...ride['selectedDays'].map<Widget>((day) {
-  //                 return Column(
-  //                   crossAxisAlignment: CrossAxisAlignment.start,
-  //                   children: [
-  //                     Text(
-  //                       '$day:',
-  //                       style: TextStyle(
-  //                           fontSize: 16, fontWeight: FontWeight.bold),
-  //                     ),
-  //                     Text(
-  //                         '  Departure Time: ${ride['times'][day]['departureTime']}'),
-  //                     Text(
-  //                         '  Return Time: ${ride['times'][day]['returnTime']}'),
-  //                   ],
-  //                 );
-  //               }).toList(),
-  //               Text('Members:', style: TextStyle(fontWeight: FontWeight.bold)),
-  //               ...ride['members'].map<Widget>((member) {
-  //                 bool isCreator = member == ride['userId'];
-  //                 return Row(
-  //                   children: [
-  //                     if (isCreator) Icon(Icons.star, color: Colors.green),
-  //                     FutureBuilder<DocumentSnapshot>(
-  //                       future: FirebaseFirestore.instance
-  //                           .collection('users')
-  //                           .doc(member)
-  //                           .get(),
-  //                       builder: (context, snapshot) {
-  //                         if (snapshot.connectionState ==
-  //                             ConnectionState.waiting) {
-  //                           return Text('Loading...');
-  //                         } else if (snapshot.hasError) {
-  //                           return Text('Error');
-  //                         } else {
-  //                           String memberName =
-  //                               snapshot.data!['firstName'] ?? 'Unknown';
-  //                           return Text(memberName,
-  //                               style: TextStyle(
-  //                                   color: isCreator
-  //                                       ? Colors.green
-  //                                       : Colors.black));
-  //                         }
-  //                       },
-  //                     ),
-  //                   ],
-  //                 );
-  //               }).toList(),
-  //             ],
-  //           ),
-  //         ),
-  //         actions: [
-  //           if (ride['members'].length < 5)
-  //             TextButton(
-  //               child: Text('JOIN'),
-  //               onPressed: () {
-  //                 _joinRide(ride);
-  //                 Navigator.of(context).pop();
-  //               },
-  //             ),
-  //           if (ride['members'].length >= 5)
-  //             Text(
-  //               'FULL',
-  //               style:
-  //                   TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
-  //             ),
-  //           TextButton(
-  //             child: Text('Close'),
-  //             onPressed: () {
-  //               Navigator.of(context).pop();
-  //             },
-  //           ),
-  //         ],
-  //       );
-  //     },
-  //   );
-  // }
-
-  static Widget _buildRichText(String label, String value) {
-    return RichText(
-      text: TextSpan(
-        style: TextStyle(color: Colors.black),
-        children: [
-          TextSpan(
-            text: label,
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          TextSpan(text: value),
-        ],
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) =>
+            GroupPage(group: group, currentUserId: currentUserId),
       ),
     );
   }
@@ -356,7 +213,7 @@ class _SearchRidePageState extends State<SearchRidePage> {
                                         ],
                                       ),
                                       onTap: () {
-                                        // _showRideDetails(context, group);
+                                        _navigateToGroupPage(context, group);
                                       },
                                     ),
                                   );
@@ -419,5 +276,48 @@ class _SearchRidePageState extends State<SearchRidePage> {
       controller.text =
           "${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}";
     }
+  }
+
+  Future<void> _joinRide(Group group) async {
+    User? currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('You need to be logged in to join a ride.')),
+      );
+      return;
+    }
+
+    List<dynamic> members = group.members;
+    if (members.length >= 5) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('This ride is full.')),
+      );
+      return;
+    }
+
+    if (members.contains(currentUser.uid)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('You are already a member of this ride.')),
+      );
+      return;
+    }
+
+    members.add(currentUser.uid);
+
+    await FirebaseFirestore.instance
+        .collection('groups')
+        .doc(group.uid)
+        .update({'members': members});
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('You have joined the ride successfully.'),
+        backgroundColor: Colors.green,
+      ),
+    );
+
+    setState(() {
+      _searchRides();
+    });
   }
 }

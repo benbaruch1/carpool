@@ -1,0 +1,236 @@
+// lib/views/group_page.dart
+
+import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:carpool_app/models/group.dart';
+
+class GroupPage extends StatelessWidget {
+  final Group group;
+  final String currentUserId;
+
+  GroupPage({required this.group, required this.currentUserId});
+
+  @override
+  Widget build(BuildContext context) {
+    bool isMember = group.members.contains(currentUserId);
+    bool isFull = group.members.length >= 5;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(group.rideName),
+        backgroundColor: Colors.green,
+      ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.green.shade200, Colors.white],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSectionTitle('Meeting Points'),
+                    _buildMeetingPoint(
+                        'First Meeting Point', group.firstMeetingPoint),
+                    _buildMeetingPoint(
+                        'Second Meeting Point', group.secondMeetingPoint),
+                    _buildMeetingPoint(
+                        'Third Meeting Point', group.thirdMeetingPoint),
+                    SizedBox(height: 20),
+                    _buildSectionTitle('Ride Details'),
+                    _buildRideDetail('Ride Name', group.rideName),
+                    _buildRideDetail(
+                        'Selected Days', group.selectedDays.join(', ')),
+                    _buildTimesSection(group.times),
+                    SizedBox(height: 20),
+                    _buildSectionTitle('Members'),
+                    _buildMembersList(group.members, group.userId),
+                  ],
+                ),
+              ),
+            ),
+            if (isMember)
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: ElevatedButton(
+                  onPressed: () async {
+                    await _leaveGroup(context);
+                  },
+                  child: Text('Leave Group'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    padding: EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                    textStyle: TextStyle(fontSize: 18),
+                  ),
+                ),
+              ),
+            if (!isMember && !isFull)
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: ElevatedButton(
+                  onPressed: () async {
+                    await _joinGroup(context);
+                  },
+                  child: Text('Join Group'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    padding: EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                    textStyle: TextStyle(fontSize: 18),
+                  ),
+                ),
+              ),
+            if (isFull)
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text(
+                  'This ride is full.',
+                  style:
+                      TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionTitle(String title) {
+    return Text(
+      title,
+      style: TextStyle(
+          fontSize: 20, fontWeight: FontWeight.bold, color: Colors.green),
+    );
+  }
+
+  Widget _buildMeetingPoint(String title, String point) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Text(
+        '$title: $point',
+        style: TextStyle(fontSize: 16),
+      ),
+    );
+  }
+
+  Widget _buildRideDetail(String title, String detail) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Text(
+        '$title: $detail',
+        style: TextStyle(fontSize: 16),
+      ),
+    );
+  }
+
+  Widget _buildTimesSection(Map<String, dynamic> times) {
+    List<Widget> timesWidgets = [];
+    times.forEach((day, timeDetails) {
+      timesWidgets.add(Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '$day:',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            Text('  Departure Time: ${timeDetails['departureTime']}'),
+            Text('  Return Time: ${timeDetails['returnTime']}'),
+          ],
+        ),
+      ));
+    });
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionTitle('Times'),
+        ...timesWidgets,
+      ],
+    );
+  }
+
+  Widget _buildMembersList(List<String> members, String userId) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: members.map((member) {
+        bool isCreator = member == userId;
+        return Row(
+          children: [
+            if (isCreator) Icon(Icons.star, color: Colors.green),
+            FutureBuilder<DocumentSnapshot>(
+              future: FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(member)
+                  .get(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Text('Loading...');
+                } else if (snapshot.hasError) {
+                  return Text('Error');
+                } else {
+                  String memberName = snapshot.data!['firstName'] ?? 'Unknown';
+                  return Text(
+                    memberName,
+                    style: TextStyle(
+                      color: isCreator ? Colors.green : Colors.black,
+                    ),
+                  );
+                }
+              },
+            ),
+          ],
+        );
+      }).toList(),
+    );
+  }
+
+  Future<void> _leaveGroup(BuildContext context) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('groups')
+          .doc(group.uid)
+          .update({
+        'members': FieldValue.arrayRemove([currentUserId])
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('You have left the group')),
+      );
+
+      Navigator.pop(context);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to leave the group')),
+      );
+    }
+  }
+
+  Future<void> _joinGroup(BuildContext context) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('groups')
+          .doc(group.uid)
+          .update({
+        'members': FieldValue.arrayUnion([currentUserId])
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('You have joined the group')),
+      );
+
+      Navigator.pop(context);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to join the group')),
+      );
+    }
+  }
+}
