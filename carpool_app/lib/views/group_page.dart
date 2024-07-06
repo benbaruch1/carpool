@@ -288,19 +288,57 @@ class GroupPage extends StatelessWidget {
 
   Future<void> _joinGroup(BuildContext context) async {
     try {
-      await FirebaseFirestore.instance
+      DocumentSnapshot groupSnapshot = await FirebaseFirestore.instance
           .collection('groups')
           .doc(group.uid)
-          .update({
-        'members': FieldValue.arrayUnion([currentUserId]),
-        'memberPoints.$currentUserId': 0,
-      });
+          .get();
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('You have joined the group')),
-      );
+      if (groupSnapshot.exists) {
+        Map<String, dynamic> groupData =
+            groupSnapshot.data() as Map<String, dynamic>;
+        Map<String, int> memberPoints =
+            Map<String, int>.from(groupData['memberPoints'] ?? {});
 
-      Navigator.pop(context);
+        //check if user point == 0
+        bool hasZeroPoints = memberPoints.values.any((points) => points == 0);
+
+        if (!hasZeroPoints) {
+          int minPoints = memberPoints.values.reduce((a, b) => a < b ? a : b);
+          int maxPoints = memberPoints.values.reduce((a, b) => a > b ? a : b);
+
+          //update all users points
+          memberPoints.updateAll((member, points) {
+            if (points == maxPoints) {
+              return points - minPoints;
+            } else if (points == minPoints) {
+              return points - minPoints;
+            } else {
+              return points;
+            }
+          });
+        }
+
+        //adding new user with point = 0
+        memberPoints[currentUserId] = 0;
+
+        await FirebaseFirestore.instance
+            .collection('groups')
+            .doc(group.uid)
+            .update({
+          'members': FieldValue.arrayUnion([currentUserId]),
+          'memberPoints': memberPoints,
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('You have joined the group')),
+        );
+
+        Navigator.pop(context);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Group not found')),
+        );
+      }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to join the group')),
