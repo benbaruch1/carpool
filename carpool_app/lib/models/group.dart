@@ -8,6 +8,7 @@ class Group {
   final Map<String, dynamic> times;
   final List<String> selectedDays;
   final String userId;
+  final Map<String, int> memberPoints; // points
 
   Group({
     required this.uid, // Add this field
@@ -19,6 +20,7 @@ class Group {
     required this.times,
     required this.selectedDays,
     required this.userId,
+    required this.memberPoints,
   });
 
   factory Group.fromMap(Map<String, dynamic> data, String id) {
@@ -32,6 +34,7 @@ class Group {
       times: data['times'],
       selectedDays: List<String>.from(data['selectedDays']),
       userId: data['userId'],
+      memberPoints: Map<String, int>.from(data['memberPoints'] ?? {}),
     );
   }
 
@@ -45,6 +48,7 @@ class Group {
       'times': times,
       'selectedDays': selectedDays,
       'userId': userId,
+      'memberPoints': memberPoints,
     };
   }
 }

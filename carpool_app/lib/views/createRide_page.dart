@@ -98,6 +98,7 @@ class _CreateRidePageState extends State<CreateRidePage> {
           'members': [
             user.uid
           ], // Add the user who created the group as the first member
+          'memberPoints': {user.uid: 0}, // Add the user with initial points 0
         });
 
         // Update the user's collection with array of groups (created by them)

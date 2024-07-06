@@ -1,5 +1,3 @@
-// lib/views/group_page.dart
-
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:carpool_app/models/group.dart';
@@ -50,7 +48,7 @@ class GroupPage extends StatelessWidget {
                         'Selected Days', group.selectedDays.join(', ')),
                     _buildTimesSection(group.times),
                     SizedBox(height: 20),
-                    _buildSectionTitle('Members'),
+                    _buildMembersAndPointsHeader(),
                     _buildMembersList(group.members, group.userId),
                   ],
                 ),
@@ -157,38 +155,112 @@ class GroupPage extends StatelessWidget {
     );
   }
 
-  Widget _buildMembersList(List<String> members, String userId) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: members.map((member) {
-        bool isCreator = member == userId;
-        return Row(
-          children: [
-            if (isCreator) Icon(Icons.star, color: Colors.green),
-            FutureBuilder<DocumentSnapshot>(
-              future: FirebaseFirestore.instance
-                  .collection('users')
-                  .doc(member)
-                  .get(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Text('Loading...');
-                } else if (snapshot.hasError) {
-                  return Text('Error');
-                } else {
-                  String memberName = snapshot.data!['firstName'] ?? 'Unknown';
-                  return Text(
-                    memberName,
-                    style: TextStyle(
-                      color: isCreator ? Colors.green : Colors.black,
-                    ),
-                  );
-                }
-              },
+  Widget _buildMembersAndPointsHeader() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 2,
+            child: Text(
+              'Members',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.green,
+              ),
             ),
-          ],
-        );
-      }).toList(),
+          ),
+          Expanded(
+            child: Text(
+              'Points',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.green,
+              ),
+              textAlign: TextAlign.right,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMembersList(List<String> members, String userId) {
+    return FutureBuilder<DocumentSnapshot>(
+      future:
+          FirebaseFirestore.instance.collection('groups').doc(group.uid).get(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Text('Loading...');
+        } else if (snapshot.hasError) {
+          return Text('Error');
+        } else {
+          if (snapshot.data == null || !snapshot.data!.exists) {
+            return Text('Group data not found.');
+          }
+
+          Map<String, dynamic> data =
+              snapshot.data!.data() as Map<String, dynamic>;
+          Map<String, dynamic> memberPoints =
+              data['memberPoints'] as Map<String, dynamic>? ?? {};
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: members.map((member) {
+              bool isCreator = member == userId;
+              int points = memberPoints[member] ?? 0;
+              return Row(
+                children: [
+                  if (isCreator) Icon(Icons.star, color: Colors.green),
+                  Expanded(
+                    flex: 2,
+                    child: FutureBuilder<DocumentSnapshot>(
+                      future: FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(member)
+                          .get(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return Text('Loading...');
+                        } else if (snapshot.hasError) {
+                          return Text('Error');
+                        } else {
+                          if (snapshot.data == null || !snapshot.data!.exists) {
+                            return Text('User not found');
+                          }
+
+                          Map<String, dynamic> userData =
+                              snapshot.data!.data() as Map<String, dynamic>;
+                          String memberName =
+                              userData['firstName'] ?? 'Unknown';
+                          return Text(
+                            memberName,
+                            style: TextStyle(
+                              color: isCreator ? Colors.green : Colors.black,
+                            ),
+                          );
+                        }
+                      },
+                    ),
+                  ),
+                  Expanded(
+                    child: Text(
+                      points.toString(),
+                      style: TextStyle(
+                        color: isCreator ? Colors.green : Colors.black,
+                      ),
+                      textAlign: TextAlign.right,
+                    ),
+                  ),
+                ],
+              );
+            }).toList(),
+          );
+        }
+      },
     );
   }
 
@@ -198,7 +270,8 @@ class GroupPage extends StatelessWidget {
           .collection('groups')
           .doc(group.uid)
           .update({
-        'members': FieldValue.arrayRemove([currentUserId])
+        'members': FieldValue.arrayRemove([currentUserId]),
+        'memberPoints.$currentUserId': FieldValue.delete(),
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -219,7 +292,8 @@ class GroupPage extends StatelessWidget {
           .collection('groups')
           .doc(group.uid)
           .update({
-        'members': FieldValue.arrayUnion([currentUserId])
+        'members': FieldValue.arrayUnion([currentUserId]),
+        'memberPoints.$currentUserId': 0,
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
