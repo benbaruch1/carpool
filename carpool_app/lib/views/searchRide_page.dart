@@ -80,7 +80,8 @@ class _SearchRidePageState extends State<SearchRidePage> {
                     ),
                   ),
                   SizedBox(height: 20),
-                  _buildTextField('User\'s first name:', _userNameController),
+                  _buildTextField(
+                      'Creator\'s first name:', _userNameController),
                   SizedBox(height: 10),
                   _buildTextField('Meeting point:', _meetingPointController),
                   SizedBox(height: 10),

@@ -26,8 +26,17 @@ class MyRidesPage extends StatelessWidget {
       ...createdRidesSnapshot.docs,
       ...joinedRidesSnapshot.docs
     ];
+    // Use a set to track unique document IDs
+    Set<String> documentIds = Set();
+    List<DocumentSnapshot> distinctRides = [];
 
-    return allRides;
+    for (var ride in allRides) {
+      if (!documentIds.contains(ride.id)) {
+        documentIds.add(ride.id);
+        distinctRides.add(ride);
+      }
+    }
+    return distinctRides;
   }
 
   void _navigateToGroupPage(BuildContext context, DocumentSnapshot ride) {
