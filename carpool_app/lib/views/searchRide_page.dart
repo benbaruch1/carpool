@@ -310,6 +310,12 @@ class _SearchRidePageState extends State<SearchRidePage> {
         .doc(group.uid)
         .update({'members': members});
 
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(currentUser.uid)
+        .update({
+      'groups': FieldValue.arrayUnion([group.uid])
+    });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('You have joined the ride successfully.'),
