@@ -1,6 +1,7 @@
 import 'package:carpool_app/models/user.dart';
 import 'package:carpool_app/services/firebase_auth_service.dart';
 import 'package:carpool_app/shared/loading.dart';
+import 'package:carpool_app/views/home_wrapper.dart';
 import 'package:flutter/material.dart';
 import 'package:carpool_app/views/myRides_page.dart';
 import 'package:carpool_app/views/createRide_page.dart';
@@ -165,6 +166,11 @@ class _HomePageState extends State<HomePage> {
                     ElevatedButton(
                       onPressed: () async {
                         await _auth.signOut();
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => HomeWrapper()),
+                        );
                       },
                       child: Text('Logout'),
                       style: ElevatedButton.styleFrom(
