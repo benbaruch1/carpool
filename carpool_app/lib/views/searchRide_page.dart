@@ -38,15 +38,19 @@ class _SearchRidePageState extends State<SearchRidePage> {
     });
   }
 
-  void _navigateToGroupPage(BuildContext context, Group group) {
+  void _navigateToGroupPage(BuildContext context, Group group) async {
     String currentUserId = FirebaseAuth.instance.currentUser!.uid;
 
-    Navigator.of(context).push(
+    bool? result = await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) =>
             GroupPage(group: group, currentUserId: currentUserId),
       ),
     );
+
+    if (result == true) {
+      _searchRides(); // Refresh the search results if the group was joined or left
+    }
   }
 
   @override
@@ -197,7 +201,8 @@ class _SearchRidePageState extends State<SearchRidePage> {
                                             TextButton(
                                               child: Text('JOIN'),
                                               onPressed: () {
-                                                _joinRide(group);
+                                                _navigateToGroupPage(
+                                                    context, group);
                                               },
                                               style: TextButton.styleFrom(
                                                 padding: EdgeInsets.symmetric(
@@ -277,54 +282,5 @@ class _SearchRidePageState extends State<SearchRidePage> {
       controller.text =
           "${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}";
     }
-  }
-
-  Future<void> _joinRide(Group group) async {
-    User? currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('You need to be logged in to join a ride.')),
-      );
-      return;
-    }
-
-    List<dynamic> members = group.members;
-    if (members.length >= 5) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('This ride is full.')),
-      );
-      return;
-    }
-
-    if (members.contains(currentUser.uid)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('You are already a member of this ride.')),
-      );
-      return;
-    }
-
-    members.add(currentUser.uid);
-
-    await FirebaseFirestore.instance
-        .collection('groups')
-        .doc(group.uid)
-        .update({'members': members});
-
-    await FirebaseFirestore.instance
-        .collection('users')
-        .doc(currentUser.uid)
-        .update({
-      'groups': FieldValue.arrayUnion([group.uid])
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('You have joined the ride successfully.'),
-        backgroundColor: Colors.green,
-      ),
-    );
-
-    setState(() {
-      _searchRides();
-    });
   }
 }

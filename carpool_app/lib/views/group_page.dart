@@ -266,19 +266,60 @@ class GroupPage extends StatelessWidget {
 
   Future<void> _leaveGroup(BuildContext context) async {
     try {
-      await FirebaseFirestore.instance
+      DocumentSnapshot groupSnapshot = await FirebaseFirestore.instance
           .collection('groups')
           .doc(group.uid)
-          .update({
-        'members': FieldValue.arrayRemove([currentUserId]),
-        'memberPoints.$currentUserId': FieldValue.delete(),
-      });
+          .get();
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('You have left the group')),
-      );
+      if (groupSnapshot.exists) {
+        Map<String, dynamic> groupData =
+            groupSnapshot.data() as Map<String, dynamic>;
 
-      Navigator.pop(context);
+        List<dynamic> members = List<String>.from(groupData['members']);
+
+        if (members.length == 1) {
+          // Delete the entire group if there's only one member
+          await FirebaseFirestore.instance
+              .collection('groups')
+              .doc(group.uid)
+              .delete();
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Group has been deleted')),
+          );
+        } else {
+          // Remove the member and their points
+          await FirebaseFirestore.instance
+              .collection('groups')
+              .doc(group.uid)
+              .update({
+            'members': FieldValue.arrayRemove([currentUserId]),
+            'memberPoints.$currentUserId': FieldValue.delete(),
+          });
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('You have left the group')),
+          );
+
+          //after the current user leave the group
+          if (members.length == 2) {
+            //if there only 1 member left
+            String remainMemberId =
+                members.firstWhere((member) => member != currentUserId);
+            await FirebaseFirestore.instance
+                .collection('groups')
+                .doc(group.uid)
+                .update({
+              'memberPoints.$remainMemberId': 0,
+            });
+          }
+        }
+        Navigator.pop(context, true);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Group not found')),
+        );
+      }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to leave the group')),
@@ -332,8 +373,7 @@ class GroupPage extends StatelessWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('You have joined the group')),
         );
-
-        Navigator.pop(context);
+        Navigator.pop(context, true);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Group not found')),
