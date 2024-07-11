@@ -314,6 +314,12 @@ class GroupPage extends StatelessWidget {
             });
           }
         }
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(currentUserId)
+            .update({
+          'groups': FieldValue.arrayRemove([group.uid]),
+        });
         Navigator.pop(context, true);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -368,6 +374,13 @@ class GroupPage extends StatelessWidget {
             .update({
           'members': FieldValue.arrayUnion([currentUserId]),
           'memberPoints': memberPoints,
+        });
+
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(currentUserId)
+            .update({
+          'groups': FieldValue.arrayUnion([group.uid]),
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
