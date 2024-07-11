@@ -4,7 +4,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:carpool_app/models/group.dart';
 import 'package:carpool_app/views/group_page.dart';
 
-class MyRidesPage extends StatelessWidget {
+class MyRidesPage extends StatefulWidget {
+  @override
+  _MyRidesPageState createState() => _MyRidesPageState();
+}
+
+class _MyRidesPageState extends State<MyRidesPage> {
   Future<List<DocumentSnapshot>> _fetchUserRides() async {
     User? user = FirebaseAuth.instance.currentUser;
     if (user == null) {
@@ -39,16 +44,21 @@ class MyRidesPage extends StatelessWidget {
     return distinctRides;
   }
 
-  void _navigateToGroupPage(BuildContext context, DocumentSnapshot ride) {
+  void _navigateToGroupPage(BuildContext context, DocumentSnapshot ride) async {
     Group group = Group.fromMap(ride.data() as Map<String, dynamic>, ride.id);
     String currentUserId = FirebaseAuth.instance.currentUser!.uid;
 
-    Navigator.of(context).push(
+    bool? result = await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) =>
             GroupPage(group: group, currentUserId: currentUserId),
       ),
     );
+
+    if (result == true) {
+      // Refresh the rides if the result is true
+      setState(() {});
+    }
   }
 
   @override
