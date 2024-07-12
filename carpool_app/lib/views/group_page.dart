@@ -50,13 +50,29 @@ class GroupPage extends StatelessWidget {
                     SizedBox(height: 20),
                     _buildMembersAndPointsHeader(),
                     _buildMembersList(group.members, group.userId),
+                    SizedBox(height: 20),
+                    FutureBuilder<String>(
+                      future: _getDriverWithLowestPoints(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return CircularProgressIndicator();
+                        } else if (snapshot.hasError) {
+                          return Text('Error loading driver info');
+                        } else {
+                          return _buildDriverInfo(snapshot.data!);
+                        }
+                      },
+                    ),
+                    SizedBox(height: 10),
+                    if (isMember) _buildStartDriveButton(),
                   ],
                 ),
               ),
             ),
             if (isMember)
               Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(14.0),
                 child: ElevatedButton(
                   onPressed: () async {
                     await _leaveGroup(context);
@@ -64,14 +80,14 @@ class GroupPage extends StatelessWidget {
                   child: Text('Leave Group'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.red,
-                    padding: EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-                    textStyle: TextStyle(fontSize: 18),
+                    padding: EdgeInsets.symmetric(horizontal: 25, vertical: 15),
+                    textStyle: TextStyle(fontSize: 14),
                   ),
                 ),
               ),
             if (!isMember && !isFull)
               Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(14.0),
                 child: ElevatedButton(
                   onPressed: () async {
                     await _joinGroup(context);
@@ -79,18 +95,19 @@ class GroupPage extends StatelessWidget {
                   child: Text('Join Group'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
-                    padding: EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-                    textStyle: TextStyle(fontSize: 18),
+                    padding: EdgeInsets.symmetric(horizontal: 25, vertical: 15),
+                    textStyle: TextStyle(fontSize: 14),
                   ),
                 ),
               ),
             if (isFull)
               Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(14.0),
                 child: Text(
                   'This ride is full.',
-                  style:
-                      TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                      color: const Color.fromARGB(255, 254, 80, 67),
+                      fontWeight: FontWeight.bold),
                 ),
               ),
           ],
@@ -397,5 +414,57 @@ class GroupPage extends StatelessWidget {
         SnackBar(content: Text('Failed to join the group')),
       );
     }
+  }
+
+  Widget _buildDriverInfo(String driverId) {
+    return FutureBuilder<DocumentSnapshot>(
+      future:
+          FirebaseFirestore.instance.collection('users').doc(driverId).get(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return CircularProgressIndicator();
+        } else if (snapshot.hasError) {
+          return Text('Error loading driver info');
+        } else {
+          Map<String, dynamic> driverData =
+              snapshot.data!.data() as Map<String, dynamic>;
+          return Row(
+            children: [
+              Icon(Icons.time_to_leave, size: 34.0),
+              SizedBox(width: 8),
+              Text(
+                '${driverData['firstName']} is the next driver',
+                style: TextStyle(fontSize: 18.0),
+              ),
+            ],
+          );
+        }
+      },
+    );
+  }
+
+  Widget _buildStartDriveButton() {
+    return ElevatedButton(
+      onPressed: () {
+        // Handle the start drive action
+      },
+      child: Text('Start Drive'),
+    );
+  }
+
+  Future<String> _getDriverWithLowestPoints() async {
+    DocumentSnapshot groupSnapshot = await FirebaseFirestore.instance
+        .collection('groups')
+        .doc(group.uid)
+        .get();
+    Map<String, dynamic> groupData =
+        groupSnapshot.data() as Map<String, dynamic>;
+    Map<String, int> memberPoints =
+        Map<String, int>.from(groupData['memberPoints'] ?? {});
+
+    String driverWithLowestPoints =
+        memberPoints.entries.reduce((a, b) => a.value < b.value ? a : b).key;
+
+    return driverWithLowestPoints;
   }
 }

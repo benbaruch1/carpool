@@ -192,31 +192,35 @@ class _SearchRidePageState extends State<SearchRidePage> {
                                               'Third Meeting Point: ${group.thirdMeetingPoint}'),
                                         ],
                                       ),
-                                      trailing: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Text(
-                                              'Members: ${group.members.length}/5'),
-                                          if (group.members.length < 5)
-                                            TextButton(
-                                              child: Text('JOIN'),
-                                              onPressed: () {
-                                                _navigateToGroupPage(
-                                                    context, group);
-                                              },
-                                              style: TextButton.styleFrom(
-                                                padding: EdgeInsets.symmetric(
-                                                    horizontal: 8, vertical: 4),
-                                              ),
-                                            ),
-                                          if (group.members.length >= 5)
+                                      trailing: SingleChildScrollView(
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
                                             Text(
-                                              'FULL',
-                                              style: TextStyle(
-                                                  color: Colors.red,
-                                                  fontWeight: FontWeight.bold),
-                                            ),
-                                        ],
+                                                'Members: ${group.members.length}/5'),
+                                            if (group.members.length < 5)
+                                              TextButton(
+                                                child: Text('JOIN'),
+                                                onPressed: () {
+                                                  _navigateToGroupPage(
+                                                      context, group);
+                                                },
+                                                style: TextButton.styleFrom(
+                                                  padding: EdgeInsets.symmetric(
+                                                      horizontal: 8,
+                                                      vertical: 4),
+                                                ),
+                                              ),
+                                            if (group.members.length >= 5)
+                                              Text(
+                                                'FULL',
+                                                style: TextStyle(
+                                                    color: Colors.red,
+                                                    fontWeight:
+                                                        FontWeight.bold),
+                                              ),
+                                          ],
+                                        ),
                                       ),
                                       onTap: () {
                                         _navigateToGroupPage(context, group);
