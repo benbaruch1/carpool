@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:carpool_app/models/group.dart';
+import 'package:intl/intl.dart'; // הייבוא של intl
 
 class GroupPage extends StatelessWidget {
   final Group group;
@@ -60,12 +61,48 @@ class GroupPage extends StatelessWidget {
                         } else if (snapshot.hasError) {
                           return Text('Error loading driver info');
                         } else {
-                          return _buildDriverInfo(snapshot.data!);
+                          return Column(children: [
+                            _buildDriverInfo(snapshot.data!),
+                            if (snapshot.data == currentUserId)
+                              FutureBuilder<bool>(
+                                future: _canStartDriveToday(),
+                                builder: (context, startDriveSnapshot) {
+                                  if (startDriveSnapshot.connectionState ==
+                                      ConnectionState.waiting) {
+                                    return CircularProgressIndicator();
+                                  } else if (startDriveSnapshot.hasError) {
+                                    return Text('Error');
+                                  } else if (startDriveSnapshot.data!) {
+                                    return _buildStartDriveButton(context);
+                                  } else {
+                                    return Text(
+                                      'You can start the drive 15 minutes before the departure time.',
+                                      style: TextStyle(color: Colors.red),
+                                    );
+                                  }
+                                },
+                              ),
+                            if (snapshot.data != currentUserId)
+                              FutureBuilder<bool>(
+                                future: _hasDriveStarted(),
+                                builder: (context, driveStartedSnapshot) {
+                                  if (driveStartedSnapshot.connectionState ==
+                                      ConnectionState.waiting) {
+                                    return CircularProgressIndicator();
+                                  } else if (driveStartedSnapshot.hasError) {
+                                    return Text('Error');
+                                  } else if (driveStartedSnapshot.data!) {
+                                    return _buildJoinDriveButton(context);
+                                  } else {
+                                    return Container();
+                                  }
+                                },
+                              ),
+                          ]);
                         }
                       },
                     ),
                     SizedBox(height: 10),
-                    if (isMember) _buildStartDriveButton(),
                   ],
                 ),
               ),
@@ -443,13 +480,55 @@ class GroupPage extends StatelessWidget {
     );
   }
 
-  Widget _buildStartDriveButton() {
+  Widget _buildStartDriveButton(BuildContext context) {
     return ElevatedButton(
-      onPressed: () {
-        // Handle the start drive action
+      onPressed: () async {
+        await FirebaseFirestore.instance
+            .collection('groups')
+            .doc(group.uid)
+            .update({
+          'status': 'started',
+        });
+        _showRouteDialog(context);
       },
       child: Text('Start Drive'),
     );
+  }
+
+  Widget _buildJoinDriveButton(BuildContext context) {
+    return ElevatedButton(
+      onPressed: () async {
+        await FirebaseFirestore.instance
+            .collection('groups')
+            .doc(group.uid)
+            .update({
+          'membersJoined': FieldValue.arrayUnion([currentUserId]),
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('You have joined the ride')),
+        );
+      },
+      child: Text('Join Drive'),
+    );
+  }
+
+  Future<bool> _canStartDriveToday() async {
+    DateTime now = DateTime.now();
+    String currentDay =
+        DateFormat('EEE').format(now); // Get current day name with 3 letters
+    String currentTime = DateFormat('HH:mm').format(now); // Get current time
+
+    if (group.times.containsKey(currentDay)) {
+      String departureTime = group.times[currentDay]['departureTime'];
+      DateTime departureDateTime = DateFormat('HH:mm').parse(departureTime);
+      DateTime currentDateTime = DateFormat('HH:mm').parse(currentTime);
+
+      Duration difference = departureDateTime.difference(currentDateTime);
+      if (difference.inMinutes <= 15 && difference.inMinutes >= 0) {
+        return true;
+      }
+    }
+    return false;
   }
 
   Future<String> _getDriverWithLowestPoints() async {
@@ -462,9 +541,105 @@ class GroupPage extends StatelessWidget {
     Map<String, int> memberPoints =
         Map<String, int>.from(groupData['memberPoints'] ?? {});
 
+    // Check if the group already has a designated driver
+    if (groupData.containsKey('nextDriver')) {
+      return groupData['nextDriver'];
+    }
+
+    // If no designated driver, find the one with the lowest points
     String driverWithLowestPoints =
         memberPoints.entries.reduce((a, b) => a.value < b.value ? a : b).key;
 
+    // Update the group with the designated driver
+    await FirebaseFirestore.instance
+        .collection('groups')
+        .doc(group.uid)
+        .update({
+      'nextDriver': driverWithLowestPoints,
+    });
+
     return driverWithLowestPoints;
+  }
+
+  Future<bool> _hasDriveStarted() async {
+    DocumentSnapshot groupSnapshot = await FirebaseFirestore.instance
+        .collection('groups')
+        .doc(group.uid)
+        .get();
+    Map<String, dynamic> groupData =
+        groupSnapshot.data() as Map<String, dynamic>;
+    return groupData['status'] == 'started';
+  }
+
+  Future<void> _showRouteDialog(BuildContext context) async {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.map, color: Colors.green),
+              SizedBox(width: 10),
+              Text("Route", style: TextStyle(color: Colors.green)),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              _buildStyledMeetingPoint(
+                  'First Meeting Point', group.firstMeetingPoint),
+              SizedBox(height: 10),
+              _buildStyledMeetingPoint(
+                  'Second Meeting Point', group.secondMeetingPoint),
+              SizedBox(height: 10),
+              _buildStyledMeetingPoint(
+                  'Third Meeting Point', group.thirdMeetingPoint),
+            ],
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text("OK", style: TextStyle(color: Colors.green)),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(10)),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildStyledMeetingPoint(String title, String point) {
+    return Row(
+      children: [
+        Icon(Icons.location_on, color: Colors.red),
+        SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+              ),
+              Text(
+                point,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[700],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 }
