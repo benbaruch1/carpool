@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:carpool_app/views/myRides_page.dart';
 import 'package:carpool_app/views/home_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:carpool_app/views/notification_page.dart';
 
 class CreateRidePage extends StatefulWidget {
   @override
@@ -13,9 +14,9 @@ class _CreateRidePageState extends State<CreateRidePage> {
   final List<String> daysOfWeek = [
     'Sun',
     'Mon',
-    'Tues',
+    'Tue',
     'Wed',
-    'Thurs',
+    'Thu',
     'Fri',
     'Sat'
   ];
@@ -108,6 +109,13 @@ class _CreateRidePageState extends State<CreateRidePage> {
             .update({
           'groups': FieldValue.arrayUnion([groupRef.id])
         });
+
+        sendNotification(
+          title: 'Group Created ${_rideNameController.text}.',
+          body:
+              'You have successfully created the group ${_rideNameController.text}.',
+          userId: user.uid,
+        );
 
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('Group created successfully!'),

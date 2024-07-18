@@ -95,15 +95,8 @@ class _SearchRidePageState extends State<SearchRidePage> {
                   ),
                   Wrap(
                     spacing: 10,
-                    children: [
-                      'Sun',
-                      'Mon',
-                      'Tues',
-                      'Wed',
-                      'Thurs',
-                      'Fri',
-                      'Sat'
-                    ].map((day) {
+                    children: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+                        .map((day) {
                       return ChoiceChip(
                         label: Text(day),
                         selected: selectedDays.contains(day),

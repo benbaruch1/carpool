@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:carpool_app/models/group.dart';
-import 'package:intl/intl.dart'; // הייבוא של intl
+import 'package:carpool_app/views/notification_page.dart';
+import 'package:intl/intl.dart';
 
 class GroupPage extends StatelessWidget {
   final Group group;
@@ -91,8 +92,6 @@ class GroupPage extends StatelessWidget {
                                     return CircularProgressIndicator();
                                   } else if (driveStartedSnapshot.hasError) {
                                     return Text('Error');
-                                  } else if (driveStartedSnapshot.data!) {
-                                    return _buildJoinDriveButton(context);
                                   } else {
                                     return Container();
                                   }
@@ -330,6 +329,8 @@ class GroupPage extends StatelessWidget {
             groupSnapshot.data() as Map<String, dynamic>;
 
         List<dynamic> members = List<String>.from(groupData['members']);
+        bool isDriver = groupData['nextDriver'] == currentUserId;
+        bool isCreator = groupData['userId'] == currentUserId;
 
         if (members.length == 1) {
           // Delete the entire group if there's only one member
@@ -367,6 +368,27 @@ class GroupPage extends StatelessWidget {
               'memberPoints.$remainMemberId': 0,
             });
           }
+          // If the leaving user is the driver, assign a new driver
+          if (isDriver) {
+            await FirebaseFirestore.instance
+                .collection('groups')
+                .doc(group.uid)
+                .update({
+              'nextDriver': FieldValue.delete(),
+            });
+            await _getDriverWithLowestPoints();
+          }
+          // If the leaving user is the creator, assign a new creator
+          if (isCreator) {
+            String newCreatorId =
+                members.firstWhere((member) => member != currentUserId);
+            await FirebaseFirestore.instance
+                .collection('groups')
+                .doc(group.uid)
+                .update({
+              'userId': newCreatorId,
+            });
+          }
         }
         await FirebaseFirestore.instance
             .collection('users')
@@ -374,6 +396,13 @@ class GroupPage extends StatelessWidget {
             .update({
           'groups': FieldValue.arrayRemove([group.uid]),
         });
+
+        sendNotification(
+          title: 'You have left the group ' + group.rideName,
+          body: 'You have successfully left the group ' + group.rideName,
+          userId: currentUserId,
+        );
+
         Navigator.pop(context, true);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -436,7 +465,10 @@ class GroupPage extends StatelessWidget {
             .update({
           'groups': FieldValue.arrayUnion([group.uid]),
         });
-
+        sendNotification(
+            title: 'Joined to' + group.rideName + ' group successfully ',
+            body: 'You have successfully joined the group',
+            userId: currentUserId);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('You have joined the group')),
         );
@@ -489,33 +521,24 @@ class GroupPage extends StatelessWidget {
             .update({
           'status': 'started',
         });
+        sendNotification(
+          title: 'You have started the ride ' + group.rideName,
+          body: 'You have successfully started the ride ' +
+              group.rideName +
+              '. Please follow the route and pick up the passengers.',
+          userId: currentUserId,
+        );
+        await notifyGroupAboutRideStart(group, currentUserId);
         _showRouteDialog(context);
       },
       child: Text('Start Drive'),
     );
   }
 
-  Widget _buildJoinDriveButton(BuildContext context) {
-    return ElevatedButton(
-      onPressed: () async {
-        await FirebaseFirestore.instance
-            .collection('groups')
-            .doc(group.uid)
-            .update({
-          'membersJoined': FieldValue.arrayUnion([currentUserId]),
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('You have joined the ride')),
-        );
-      },
-      child: Text('Join Drive'),
-    );
-  }
-
   Future<bool> _canStartDriveToday() async {
     DateTime now = DateTime.now();
     String currentDay =
-        DateFormat('EEE').format(now); // Get current day name with 3 letters
+        DateFormat('EEE').format(now); // Get short day name (3 letters)
     String currentTime = DateFormat('HH:mm').format(now); // Get current time
 
     if (group.times.containsKey(currentDay)) {
@@ -524,7 +547,7 @@ class GroupPage extends StatelessWidget {
       DateTime currentDateTime = DateFormat('HH:mm').parse(currentTime);
 
       Duration difference = departureDateTime.difference(currentDateTime);
-      if (difference.inMinutes <= 15 && difference.inMinutes >= 0) {
+      if (difference.inMinutes <= 15 && difference.inMinutes >= -15) {
         return true;
       }
     }
@@ -642,4 +665,19 @@ class GroupPage extends StatelessWidget {
       ],
     );
   }
+}
+
+Future<void> notifyGroupAboutRideStart(
+    Group group, String currentUserId) async {
+  // Filter out the current driver from the user IDs
+  List<String> userIds =
+      group.members.where((userId) => userId != currentUserId).toList();
+
+  await sendNotificationToGroupMembers(
+    title: 'The ride ' + group.rideName + ' has started!',
+    body: 'Your ride to ' +
+        group.rideName +
+        ' has just started. Please be ready at the meeting point.',
+    userIds: userIds,
+  );
 }

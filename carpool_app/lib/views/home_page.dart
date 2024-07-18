@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:carpool_app/views/myRides_page.dart';
 import 'package:carpool_app/views/createRide_page.dart';
 import 'package:carpool_app/views/searchRide_page.dart';
+import 'package:carpool_app/views/notification_page.dart';
 import 'package:provider/provider.dart';
 import 'package:carpool_app/views/myprofile_page.dart';
 
@@ -134,6 +135,11 @@ class _HomePageState extends State<HomePage> {
                           InkWell(
                             onTap: () {
                               // Implement navigation to Notifications
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => NotificationPage()),
+                              );
                             },
                             child: Column(
                               children: [
