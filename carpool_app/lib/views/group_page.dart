@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:carpool_app/models/group.dart';
 import 'package:carpool_app/views/notification_page.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart'; // Import the url_launcher package
 
 class GroupPage extends StatefulWidget {
   final Group group;
@@ -328,10 +329,14 @@ class _GroupPageState extends State<GroupPage> {
                               snapshot.data!.data() as Map<String, dynamic>;
                           String memberName =
                               userData['firstName'] ?? 'Unknown';
-                          return Text(
-                            memberName,
-                            style: TextStyle(
-                              color: isCreator ? Colors.green : Colors.black,
+                          return InkWell(
+                            onTap: () => _showDriverDetails(context, member),
+                            child: Text(
+                              memberName,
+                              style: TextStyle(
+                                color: isCreator ? Colors.green : Colors.black,
+                                decoration: TextDecoration.underline,
+                              ),
                             ),
                           );
                         }
@@ -771,6 +776,56 @@ class _GroupPageState extends State<GroupPage> {
       ],
     );
   }
+}
+
+Future<void> _showDriverDetails(BuildContext context, String driverId) async {
+  DocumentSnapshot driverSnapshot =
+      await FirebaseFirestore.instance.collection('users').doc(driverId).get();
+
+  if (driverSnapshot.exists) {
+    Map<String, dynamic> driverData =
+        driverSnapshot.data() as Map<String, dynamic>;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('${driverData['firstName']}\'s Details'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                title: Text('Phone Number'),
+                subtitle: Text(driverData['phoneNumber'] ?? 'N/A'),
+                onTap: () {
+                  _makePhoneCall(driverData['phoneNumber']);
+                },
+              ),
+            ],
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text("Close", style: TextStyle(color: Colors.green)),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(10)),
+          ),
+        );
+      },
+    );
+  }
+}
+
+Future<void> _makePhoneCall(String phoneNumber) async {
+  final Uri launchUri = Uri(
+    scheme: 'tel',
+    path: phoneNumber,
+  );
+  await launch(launchUri.toString());
 }
 
 Future<void> notifyGroupAboutRideStart(
