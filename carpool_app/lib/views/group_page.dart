@@ -790,11 +790,18 @@ Future<void> _showDriverDetails(BuildContext context, String driverId) async {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('${driverData['firstName']}\'s Details'),
+          title: Row(
+            children: [
+              Icon(Icons.person, color: Colors.blue),
+              SizedBox(width: 8),
+              Text('${driverData['firstName']}\'s Details'),
+            ],
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
+                leading: Icon(Icons.phone, color: Colors.green),
                 title: Text('Phone Number'),
                 subtitle: Text(driverData['phoneNumber'] ?? 'N/A'),
                 onTap: () {
