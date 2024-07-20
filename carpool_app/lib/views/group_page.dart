@@ -3,7 +3,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:carpool_app/models/group.dart';
 import 'package:carpool_app/views/notification_page.dart';
 import 'package:intl/intl.dart';
-import 'package:url_launcher/url_launcher.dart'; // Import the url_launcher package
+import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:geocoding/geocoding.dart';
 
 class GroupPage extends StatefulWidget {
   final Group group;
@@ -140,6 +143,31 @@ class _GroupPageState extends State<GroupPage> {
                       },
                     ),
                     SizedBox(height: 10),
+                    SizedBox(
+                      height: 250,
+                      child: FlutterMap(
+                        options: MapOptions(
+                          initialCenter: LatLng(32.908089, 35.293079),
+                          initialZoom: 10.2,
+                        ),
+                        children: [
+                          TileLayer(
+                            urlTemplate:
+                                'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                            userAgentPackageName: 'com.carpool.app',
+                          ),
+                          RichAttributionWidget(
+                            attributions: [
+                              TextSourceAttribution(
+                                'OpenStreetMap contributors',
+                                onTap: () => launchUrl(Uri.parse(
+                                    'https://openstreetmap.org/copyright')),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -848,4 +876,17 @@ Future<void> notifyGroupAboutRideStart(
         ' has just started. Please be ready at the meeting point.',
     userIds: userIds,
   );
+}
+
+Future<LatLng> getLatLngFromAddress(String address) async {
+  try {
+    List<Location> locations = await locationFromAddress(address);
+    if (locations.isNotEmpty) {
+      return LatLng(locations.first.latitude, locations.first.longitude);
+    } else {
+      throw Exception('No locations found for the given address');
+    }
+  } catch (e) {
+    throw Exception('Failed to get coordinates: $e');
+  }
 }
