@@ -4,20 +4,25 @@ import 'package:carpool_app/models/group.dart';
 import 'package:carpool_app/views/notification_page.dart';
 import 'package:intl/intl.dart';
 
-class GroupPage extends StatelessWidget {
+class GroupPage extends StatefulWidget {
   final Group group;
   final String currentUserId;
 
   GroupPage({required this.group, required this.currentUserId});
 
   @override
+  State<GroupPage> createState() => _GroupPageState();
+}
+
+class _GroupPageState extends State<GroupPage> {
+  @override
   Widget build(BuildContext context) {
-    bool isMember = group.members.contains(currentUserId);
-    bool isFull = group.members.length >= 5;
+    bool isMember = widget.group.members.contains(widget.currentUserId);
+    bool isFull = widget.group.members.length >= 5;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(group.rideName),
+        title: Text(widget.group.rideName),
         backgroundColor: Colors.green,
       ),
       body: Container(
@@ -38,66 +43,98 @@ class GroupPage extends StatelessWidget {
                   children: [
                     _buildSectionTitle('Meeting Points'),
                     _buildMeetingPoint(
-                        'First Meeting Point', group.firstMeetingPoint),
+                        'First Meeting Point', widget.group.firstMeetingPoint),
+                    _buildMeetingPoint('Second Meeting Point',
+                        widget.group.secondMeetingPoint),
                     _buildMeetingPoint(
-                        'Second Meeting Point', group.secondMeetingPoint),
-                    _buildMeetingPoint(
-                        'Third Meeting Point', group.thirdMeetingPoint),
+                        'Third Meeting Point', widget.group.thirdMeetingPoint),
                     SizedBox(height: 20),
                     _buildSectionTitle('Ride Details'),
-                    _buildRideDetail('Ride Name', group.rideName),
+                    _buildRideDetail('Ride Name', widget.group.rideName),
                     _buildRideDetail(
-                        'Selected Days', group.selectedDays.join(', ')),
-                    _buildTimesSection(group.times),
+                        'Selected Days', widget.group.selectedDays.join(', ')),
+                    _buildTimesSection(widget.group.times),
                     SizedBox(height: 20),
                     _buildMembersAndPointsHeader(),
-                    _buildMembersList(group.members, group.userId),
+                    _buildMembersList(
+                        widget.group.members, widget.group.userId),
                     SizedBox(height: 20),
-                    FutureBuilder<String>(
-                      future: _getDriverWithLowestPoints(),
+                    FutureBuilder<DocumentSnapshot>(
+                      future: FirebaseFirestore.instance
+                          .collection('groups')
+                          .doc(widget.group.uid)
+                          .get(),
                       builder: (context, snapshot) {
                         if (snapshot.connectionState ==
                             ConnectionState.waiting) {
                           return CircularProgressIndicator();
                         } else if (snapshot.hasError) {
-                          return Text('Error loading driver info');
+                          return Text('Error loading group status');
                         } else {
-                          return Column(children: [
-                            _buildDriverInfo(snapshot.data!),
-                            if (snapshot.data == currentUserId)
-                              FutureBuilder<bool>(
-                                future: _canStartDriveToday(),
-                                builder: (context, startDriveSnapshot) {
-                                  if (startDriveSnapshot.connectionState ==
-                                      ConnectionState.waiting) {
-                                    return CircularProgressIndicator();
-                                  } else if (startDriveSnapshot.hasError) {
-                                    return Text('Error');
-                                  } else if (startDriveSnapshot.data!) {
-                                    return _buildStartDriveButton(context);
-                                  } else {
-                                    return Text(
-                                      'You can start the drive 15 minutes before the departure time.',
-                                      style: TextStyle(color: Colors.red),
-                                    );
-                                  }
-                                },
-                              ),
-                            if (snapshot.data != currentUserId)
-                              FutureBuilder<bool>(
-                                future: _hasDriveStarted(),
-                                builder: (context, driveStartedSnapshot) {
-                                  if (driveStartedSnapshot.connectionState ==
-                                      ConnectionState.waiting) {
-                                    return CircularProgressIndicator();
-                                  } else if (driveStartedSnapshot.hasError) {
-                                    return Text('Error');
-                                  } else {
-                                    return Container();
-                                  }
-                                },
-                              ),
-                          ]);
+                          var groupData =
+                              snapshot.data!.data() as Map<String, dynamic>;
+                          String status = groupData['status'] ?? 'not started';
+
+                          if (status == 'started') {
+                            return FutureBuilder<bool>(
+                              future: _canEndDriveToday(),
+                              builder: (context, endDriveSnapshot) {
+                                if (endDriveSnapshot.connectionState ==
+                                    ConnectionState.waiting) {
+                                  return CircularProgressIndicator();
+                                } else if (endDriveSnapshot.hasError) {
+                                  return Text('Error');
+                                } else if (endDriveSnapshot.data!) {
+                                  return _buildEndDriveButton(context);
+                                } else {
+                                  return Text(
+                                    'You can end the drive 10 minutes before the return time or until midnight.',
+                                    style: TextStyle(color: Colors.red),
+                                  );
+                                }
+                              },
+                            );
+                          } else {
+                            return FutureBuilder<String>(
+                              future: _getDriverWithLowestPoints(),
+                              builder: (context, driverSnapshot) {
+                                if (driverSnapshot.connectionState ==
+                                    ConnectionState.waiting) {
+                                  return CircularProgressIndicator();
+                                } else if (driverSnapshot.hasError) {
+                                  return Text('Error loading driver info');
+                                } else {
+                                  return Column(children: [
+                                    _buildDriverInfo(driverSnapshot.data!),
+                                    if (driverSnapshot.data ==
+                                        widget.currentUserId)
+                                      FutureBuilder<bool>(
+                                        future: _canStartDriveToday(),
+                                        builder: (context, startDriveSnapshot) {
+                                          if (startDriveSnapshot
+                                                  .connectionState ==
+                                              ConnectionState.waiting) {
+                                            return CircularProgressIndicator();
+                                          } else if (startDriveSnapshot
+                                              .hasError) {
+                                            return Text('Error');
+                                          } else if (startDriveSnapshot.data!) {
+                                            return _buildStartDriveButton(
+                                                context);
+                                          } else {
+                                            return Text(
+                                              'You can start the drive 15 minutes before the departure time.',
+                                              style:
+                                                  TextStyle(color: Colors.red),
+                                            );
+                                          }
+                                        },
+                                      ),
+                                  ]);
+                                }
+                              },
+                            );
+                          }
                         }
                       },
                     ),
@@ -242,8 +279,10 @@ class GroupPage extends StatelessWidget {
 
   Widget _buildMembersList(List<String> members, String userId) {
     return FutureBuilder<DocumentSnapshot>(
-      future:
-          FirebaseFirestore.instance.collection('groups').doc(group.uid).get(),
+      future: FirebaseFirestore.instance
+          .collection('groups')
+          .doc(widget.group.uid)
+          .get(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Text('Loading...');
@@ -321,7 +360,7 @@ class GroupPage extends StatelessWidget {
     try {
       DocumentSnapshot groupSnapshot = await FirebaseFirestore.instance
           .collection('groups')
-          .doc(group.uid)
+          .doc(widget.group.uid)
           .get();
 
       if (groupSnapshot.exists) {
@@ -329,14 +368,14 @@ class GroupPage extends StatelessWidget {
             groupSnapshot.data() as Map<String, dynamic>;
 
         List<dynamic> members = List<String>.from(groupData['members']);
-        bool isDriver = groupData['nextDriver'] == currentUserId;
-        bool isCreator = groupData['userId'] == currentUserId;
+        bool isDriver = groupData['nextDriver'] == widget.currentUserId;
+        bool isCreator = groupData['userId'] == widget.currentUserId;
 
         if (members.length == 1) {
           // Delete the entire group if there's only one member
           await FirebaseFirestore.instance
               .collection('groups')
-              .doc(group.uid)
+              .doc(widget.group.uid)
               .delete();
 
           ScaffoldMessenger.of(context).showSnackBar(
@@ -346,10 +385,10 @@ class GroupPage extends StatelessWidget {
           // Remove the member and their points
           await FirebaseFirestore.instance
               .collection('groups')
-              .doc(group.uid)
+              .doc(widget.group.uid)
               .update({
-            'members': FieldValue.arrayRemove([currentUserId]),
-            'memberPoints.$currentUserId': FieldValue.delete(),
+            'members': FieldValue.arrayRemove([widget.currentUserId]),
+            'memberPoints.${widget.currentUserId}': FieldValue.delete(),
           });
 
           ScaffoldMessenger.of(context).showSnackBar(
@@ -360,10 +399,10 @@ class GroupPage extends StatelessWidget {
           if (members.length == 2) {
             //if there only 1 member left
             String remainMemberId =
-                members.firstWhere((member) => member != currentUserId);
+                members.firstWhere((member) => member != widget.currentUserId);
             await FirebaseFirestore.instance
                 .collection('groups')
-                .doc(group.uid)
+                .doc(widget.group.uid)
                 .update({
               'memberPoints.$remainMemberId': 0,
             });
@@ -372,7 +411,7 @@ class GroupPage extends StatelessWidget {
           if (isDriver) {
             await FirebaseFirestore.instance
                 .collection('groups')
-                .doc(group.uid)
+                .doc(widget.group.uid)
                 .update({
               'nextDriver': FieldValue.delete(),
             });
@@ -381,10 +420,10 @@ class GroupPage extends StatelessWidget {
           // If the leaving user is the creator, assign a new creator
           if (isCreator) {
             String newCreatorId =
-                members.firstWhere((member) => member != currentUserId);
+                members.firstWhere((member) => member != widget.currentUserId);
             await FirebaseFirestore.instance
                 .collection('groups')
-                .doc(group.uid)
+                .doc(widget.group.uid)
                 .update({
               'userId': newCreatorId,
             });
@@ -392,15 +431,15 @@ class GroupPage extends StatelessWidget {
         }
         await FirebaseFirestore.instance
             .collection('users')
-            .doc(currentUserId)
+            .doc(widget.currentUserId)
             .update({
-          'groups': FieldValue.arrayRemove([group.uid]),
+          'groups': FieldValue.arrayRemove([widget.group.uid]),
         });
 
         sendNotification(
-          title: 'You have left the group ' + group.rideName,
-          body: 'You have successfully left the group ' + group.rideName,
-          userId: currentUserId,
+          title: 'You have left the group ' + widget.group.rideName,
+          body: 'You have successfully left the group ' + widget.group.rideName,
+          userId: widget.currentUserId,
         );
 
         Navigator.pop(context, true);
@@ -420,7 +459,7 @@ class GroupPage extends StatelessWidget {
     try {
       DocumentSnapshot groupSnapshot = await FirebaseFirestore.instance
           .collection('groups')
-          .doc(group.uid)
+          .doc(widget.group.uid)
           .get();
 
       if (groupSnapshot.exists) {
@@ -449,26 +488,27 @@ class GroupPage extends StatelessWidget {
         }
 
         //adding new user with point = 0
-        memberPoints[currentUserId] = 0;
+        memberPoints[widget.currentUserId] = 0;
 
         await FirebaseFirestore.instance
             .collection('groups')
-            .doc(group.uid)
+            .doc(widget.group.uid)
             .update({
-          'members': FieldValue.arrayUnion([currentUserId]),
+          'members': FieldValue.arrayUnion([widget.currentUserId]),
           'memberPoints': memberPoints,
         });
 
         await FirebaseFirestore.instance
             .collection('users')
-            .doc(currentUserId)
+            .doc(widget.currentUserId)
             .update({
-          'groups': FieldValue.arrayUnion([group.uid]),
+          'groups': FieldValue.arrayUnion([widget.group.uid]),
         });
         sendNotification(
-            title: 'Joined to' + group.rideName + ' group successfully ',
+            title:
+                'Joined to ' + widget.group.rideName + ' group successfully ',
             body: 'You have successfully joined the group',
-            userId: currentUserId);
+            userId: widget.currentUserId);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('You have joined the group')),
         );
@@ -517,22 +557,68 @@ class GroupPage extends StatelessWidget {
       onPressed: () async {
         await FirebaseFirestore.instance
             .collection('groups')
-            .doc(group.uid)
+            .doc(widget.group.uid)
             .update({
           'status': 'started',
         });
         sendNotification(
-          title: 'You have started the ride ' + group.rideName,
+          title: 'You have started the ride ' + widget.group.rideName,
           body: 'You have successfully started the ride ' +
-              group.rideName +
+              widget.group.rideName +
               '. Please follow the route and pick up the passengers.',
-          userId: currentUserId,
+          userId: widget.currentUserId,
         );
-        await notifyGroupAboutRideStart(group, currentUserId);
+        await notifyGroupAboutRideStart(widget.group, widget.currentUserId);
         _showRouteDialog(context);
+        setState(() {});
       },
       child: Text('Start Drive'),
     );
+  }
+
+  Widget _buildEndDriveButton(BuildContext context) {
+    return ElevatedButton(
+      onPressed: () async {
+        await FirebaseFirestore.instance
+            .collection('groups')
+            .doc(widget.group.uid)
+            .update({
+          'status': 'finished',
+        });
+        DocumentSnapshot groupSnapshot = await FirebaseFirestore.instance
+            .collection('groups')
+            .doc(widget.group.uid)
+            .get();
+        inceasePoint(groupSnapshot['nextDriver']);
+        sendNotification(
+          title: 'You have finished the ride ' + widget.group.rideName,
+          body: 'You have successfully finished the ride ' +
+              widget.group.rideName,
+          userId: widget.currentUserId,
+        );
+        await notifyGroupAboutRideStart(widget.group, widget.currentUserId);
+        setState(() {});
+      },
+      child: Text('End Drive'),
+    );
+  }
+
+  Future<void> inceasePoint(String uid) async {
+    DocumentReference groupRef =
+        FirebaseFirestore.instance.collection('groups').doc(widget.group.uid);
+
+    try {
+      await groupRef.update({
+        'memberPoints.$uid': FieldValue.increment(1),
+      });
+      print('Update successful');
+      sendNotification(
+          title: "Point Received! :)",
+          body: "Thanks for your drive. You have received your point.",
+          userId: uid);
+    } catch (e) {
+      print('Error updating document: $e');
+    }
   }
 
   Future<bool> _canStartDriveToday() async {
@@ -541,8 +627,8 @@ class GroupPage extends StatelessWidget {
         DateFormat('EEE').format(now); // Get short day name (3 letters)
     String currentTime = DateFormat('HH:mm').format(now); // Get current time
 
-    if (group.times.containsKey(currentDay)) {
-      String departureTime = group.times[currentDay]['departureTime'];
+    if (widget.group.times.containsKey(currentDay)) {
+      String departureTime = widget.group.times[currentDay]['departureTime'];
       DateTime departureDateTime = DateFormat('HH:mm').parse(departureTime);
       DateTime currentDateTime = DateFormat('HH:mm').parse(currentTime);
 
@@ -554,20 +640,40 @@ class GroupPage extends StatelessWidget {
     return false;
   }
 
+  Future<bool> _canEndDriveToday() async {
+    DateTime now = DateTime.now();
+    String currentDay =
+        DateFormat('EEE').format(now); // Get short day name (3 letters)
+    String currentTime = DateFormat('HH:mm').format(now); // Get current time
+
+    if (widget.group.times.containsKey(currentDay)) {
+      String returnTime = widget.group.times[currentDay]['returnTime'];
+      DateTime returnDateTime = DateFormat('HH:mm').parse(returnTime);
+      DateTime currentDateTime = DateFormat('HH:mm').parse(currentTime);
+
+      Duration difference = returnDateTime.difference(currentDateTime);
+      if (difference.inMinutes <= 10 &&
+          now.isBefore(DateTime(now.year, now.month, now.day, 23, 59, 59))) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   Future<String> _getDriverWithLowestPoints() async {
     DocumentSnapshot groupSnapshot = await FirebaseFirestore.instance
         .collection('groups')
-        .doc(group.uid)
+        .doc(widget.group.uid)
         .get();
     Map<String, dynamic> groupData =
         groupSnapshot.data() as Map<String, dynamic>;
     Map<String, int> memberPoints =
         Map<String, int>.from(groupData['memberPoints'] ?? {});
 
-    // Check if the group already has a designated driver
-    if (groupData.containsKey('nextDriver')) {
-      return groupData['nextDriver'];
-    }
+    // // Check if the group already has a designated driver
+    // if (groupData.containsKey('nextDriver')) {
+    //   return groupData['nextDriver'];
+    // }
 
     // If no designated driver, find the one with the lowest points
     String driverWithLowestPoints =
@@ -576,7 +682,7 @@ class GroupPage extends StatelessWidget {
     // Update the group with the designated driver
     await FirebaseFirestore.instance
         .collection('groups')
-        .doc(group.uid)
+        .doc(widget.group.uid)
         .update({
       'nextDriver': driverWithLowestPoints,
     });
@@ -587,7 +693,7 @@ class GroupPage extends StatelessWidget {
   Future<bool> _hasDriveStarted() async {
     DocumentSnapshot groupSnapshot = await FirebaseFirestore.instance
         .collection('groups')
-        .doc(group.uid)
+        .doc(widget.group.uid)
         .get();
     Map<String, dynamic> groupData =
         groupSnapshot.data() as Map<String, dynamic>;
@@ -610,13 +716,13 @@ class GroupPage extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
               _buildStyledMeetingPoint(
-                  'First Meeting Point', group.firstMeetingPoint),
+                  'First Meeting Point', widget.group.firstMeetingPoint),
               SizedBox(height: 10),
               _buildStyledMeetingPoint(
-                  'Second Meeting Point', group.secondMeetingPoint),
+                  'Second Meeting Point', widget.group.secondMeetingPoint),
               SizedBox(height: 10),
               _buildStyledMeetingPoint(
-                  'Third Meeting Point', group.thirdMeetingPoint),
+                  'Third Meeting Point', widget.group.thirdMeetingPoint),
             ],
           ),
           actions: <Widget>[
