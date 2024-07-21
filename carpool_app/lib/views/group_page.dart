@@ -20,10 +20,13 @@ class GroupPage extends StatefulWidget {
 }
 
 class _GroupPageState extends State<GroupPage> {
+  bool isDriverOnTheWay = false;
+
   @override
   Widget build(BuildContext context) {
     bool isMember = widget.group.members.contains(widget.currentUserId);
     bool isFull = widget.group.members.length >= 5;
+
     List<String> addresses = [
       widget.group.firstMeetingPoint,
       if (widget.group.secondMeetingPoint.isNotEmpty)
@@ -98,7 +101,8 @@ class _GroupPageState extends State<GroupPage> {
                                 } else if (endDriveSnapshot.hasError) {
                                   return Text('Error');
                                 } else if (endDriveSnapshot.data!) {
-                                  return _buildEndDriveButton(context);
+                                  return _buildEndDriveButton(
+                                      context, groupData['nextDriver']);
                                 } else {
                                   return Text(
                                     'You can end the drive 10 minutes before the return time or until midnight.',
@@ -511,14 +515,14 @@ class _GroupPageState extends State<GroupPage> {
         Map<String, int> memberPoints =
             Map<String, int>.from(groupData['memberPoints'] ?? {});
 
-        //check if user point == 0
+        // Check if user point == 0
         bool hasZeroPoints = memberPoints.values.any((points) => points == 0);
 
         if (!hasZeroPoints) {
           int minPoints = memberPoints.values.reduce((a, b) => a < b ? a : b);
           int maxPoints = memberPoints.values.reduce((a, b) => a > b ? a : b);
 
-          //update all users points
+          // Update all users points
           memberPoints.updateAll((member, points) {
             if (points == maxPoints) {
               return points - minPoints;
@@ -530,31 +534,83 @@ class _GroupPageState extends State<GroupPage> {
           });
         }
 
-        //adding new user with point = 0
+        // Adding new user with point = 0
         memberPoints[widget.currentUserId] = 0;
 
+        // Show dialog to select pickup point
+        String selectedPickupPoint = await showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: Text('Select Pickup Point'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ListTile(
+                    title: Text(widget.group.firstMeetingPoint),
+                    onTap: () {
+                      Navigator.of(context).pop(widget.group.firstMeetingPoint);
+                    },
+                  ),
+                  if (widget.group.secondMeetingPoint.isNotEmpty)
+                    ListTile(
+                      title: Text(widget.group.secondMeetingPoint),
+                      onTap: () {
+                        Navigator.of(context)
+                            .pop(widget.group.secondMeetingPoint);
+                      },
+                    ),
+                  if (widget.group.thirdMeetingPoint.isNotEmpty)
+                    ListTile(
+                      title: Text(widget.group.thirdMeetingPoint),
+                      onTap: () {
+                        Navigator.of(context)
+                            .pop(widget.group.thirdMeetingPoint);
+                      },
+                    ),
+                ],
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.all(Radius.circular(10)),
+              ),
+            );
+          },
+        );
+
+        if (selectedPickupPoint == null) {
+          // User canceled the dialog, do nothing
+          return;
+        }
+
+        // Update the group's document with the new member and their pickup point
         await FirebaseFirestore.instance
             .collection('groups')
             .doc(widget.group.uid)
             .update({
           'members': FieldValue.arrayUnion([widget.currentUserId]),
           'memberPoints': memberPoints,
+          'pickupPoints.${widget.currentUserId}': selectedPickupPoint,
         });
 
+        // Update the user's document with the group ID
         await FirebaseFirestore.instance
             .collection('users')
             .doc(widget.currentUserId)
             .update({
           'groups': FieldValue.arrayUnion([widget.group.uid]),
         });
+
         sendNotification(
-            title:
-                'Joined to ' + widget.group.rideName + ' group successfully ',
-            body: 'You have successfully joined the group',
-            userId: widget.currentUserId);
+          title: 'Joined to ' + widget.group.rideName + ' group successfully ',
+          body:
+              'You have successfully joined the group and selected your pickup point.',
+          userId: widget.currentUserId,
+        );
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('You have joined the group')),
         );
+
         Navigator.pop(context, true);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -580,13 +636,17 @@ class _GroupPageState extends State<GroupPage> {
         } else {
           Map<String, dynamic> driverData =
               snapshot.data!.data() as Map<String, dynamic>;
-          return Row(
+          return Column(
             children: [
-              Icon(Icons.time_to_leave, size: 34.0),
-              SizedBox(width: 8),
-              Text(
-                '${driverData['firstName']} is the next driver',
-                style: TextStyle(fontSize: 18.0),
+              Row(
+                children: [
+                  Icon(Icons.time_to_leave, size: 34.0),
+                  SizedBox(width: 8),
+                  Text(
+                    '${driverData['firstName']} is the next driver',
+                    style: TextStyle(fontSize: 18.0),
+                  ),
+                ],
               ),
             ],
           );
@@ -612,14 +672,23 @@ class _GroupPageState extends State<GroupPage> {
           userId: widget.currentUserId,
         );
         await notifyGroupAboutRideStart(widget.group, widget.currentUserId);
+
+        setState(() {
+          isDriverOnTheWay = true;
+        });
+
         _showRouteDialog(context);
-        setState(() {});
       },
       child: Text('Start Drive'),
     );
   }
 
-  Widget _buildEndDriveButton(BuildContext context) {
+  Widget _buildEndDriveButton(BuildContext context, String driverId) {
+    // Check if the current user is the driver
+    if (widget.currentUserId != driverId) {
+      return SizedBox
+          .shrink(); // Return an empty widget if the user is not the driver
+    }
     return ElevatedButton(
       onPressed: () async {
         await FirebaseFirestore.instance
@@ -659,6 +728,12 @@ class _GroupPageState extends State<GroupPage> {
           title: "Point Received! :)",
           body: "Thanks for your drive. You have received your point.",
           userId: uid);
+
+      // delete the nextDriver after he earn a point
+      await FirebaseFirestore.instance
+          .collection('groups')
+          .doc(widget.group.uid)
+          .update({'nextDriver': FieldValue.delete()});
     } catch (e) {
       print('Error updating document: $e');
     }
@@ -713,10 +788,11 @@ class _GroupPageState extends State<GroupPage> {
     Map<String, int> memberPoints =
         Map<String, int>.from(groupData['memberPoints'] ?? {});
 
-    // // Check if the group already has a designated driver
-    // if (groupData.containsKey('nextDriver')) {
-    //   return groupData['nextDriver'];
-    // }
+    // Check if the group already has a designated driver
+    if (groupData.containsKey('nextDriver') &&
+        groupData['nextDriver'] != null) {
+      return groupData['nextDriver'];
+    }
 
     // If no designated driver, find the one with the lowest points
     String driverWithLowestPoints =
