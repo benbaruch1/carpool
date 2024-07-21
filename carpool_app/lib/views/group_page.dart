@@ -1,3 +1,4 @@
+import 'package:carpool_app/shared/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:carpool_app/models/group.dart';
@@ -155,7 +156,7 @@ class _GroupPageState extends State<GroupPage> {
                       height: 250,
                       child: FlutterMap(
                         options: MapOptions(
-                          initialCenter: LatLng(32.908089, 35.293079),
+                          initialCenter: Constants.initialCenter,
                           initialZoom: 9.9,
                         ),
                         children: [
@@ -911,7 +912,7 @@ FutureBuilder<List<LatLng>> buildMarkerLayer(List<String> addresses) {
       }
 
       List<LatLng> latLngList = snapshot.data!;
-      latLngList.add(LatLng(32.908089, 35.293079)); // braude
+      latLngList.add(Constants.destination); // braude latlng
 
       return MarkerLayer(
         markers: latLngList.map((latLng) {
