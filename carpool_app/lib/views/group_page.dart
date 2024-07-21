@@ -23,6 +23,14 @@ class _GroupPageState extends State<GroupPage> {
   Widget build(BuildContext context) {
     bool isMember = widget.group.members.contains(widget.currentUserId);
     bool isFull = widget.group.members.length >= 5;
+    List<String> addresses = [
+      widget.group.firstMeetingPoint,
+      if (widget.group.secondMeetingPoint.isNotEmpty)
+        widget.group.secondMeetingPoint,
+      if (widget.group.thirdMeetingPoint.isNotEmpty)
+        widget.group.thirdMeetingPoint,
+    ];
+    List<LatLng> latLngList = [];
 
     return Scaffold(
       appBar: AppBar(
@@ -148,7 +156,7 @@ class _GroupPageState extends State<GroupPage> {
                       child: FlutterMap(
                         options: MapOptions(
                           initialCenter: LatLng(32.908089, 35.293079),
-                          initialZoom: 10.2,
+                          initialZoom: 9.9,
                         ),
                         children: [
                           TileLayer(
@@ -156,6 +164,7 @@ class _GroupPageState extends State<GroupPage> {
                                 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                             userAgentPackageName: 'com.carpool.app',
                           ),
+                          buildMarkerLayer(addresses),
                           RichAttributionWidget(
                             attributions: [
                               TextSourceAttribution(
@@ -878,15 +887,46 @@ Future<void> notifyGroupAboutRideStart(
   );
 }
 
-Future<LatLng> getLatLngFromAddress(String address) async {
-  try {
+Future<List<LatLng>> getLatLngFromAddresses(List<String> addresses) async {
+  List<LatLng> latLngList = [];
+  for (String address in addresses) {
     List<Location> locations = await locationFromAddress(address);
     if (locations.isNotEmpty) {
-      return LatLng(locations.first.latitude, locations.first.longitude);
-    } else {
-      throw Exception('No locations found for the given address');
+      latLngList.add(LatLng(locations[0].latitude, locations[0].longitude));
     }
-  } catch (e) {
-    throw Exception('Failed to get coordinates: $e');
   }
+  return latLngList;
+}
+
+FutureBuilder<List<LatLng>> buildMarkerLayer(List<String> addresses) {
+  return FutureBuilder<List<LatLng>>(
+    future: getLatLngFromAddresses(addresses),
+    builder: (context, snapshot) {
+      if (snapshot.connectionState == ConnectionState.waiting) {
+        return Center(child: CircularProgressIndicator());
+      } else if (snapshot.hasError) {
+        return Center(child: Text('Error: ${snapshot.error}'));
+      } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+        return Center(child: Text('No locations found'));
+      }
+
+      List<LatLng> latLngList = snapshot.data!;
+      latLngList.add(LatLng(32.908089, 35.293079)); // braude
+
+      return MarkerLayer(
+        markers: latLngList.map((latLng) {
+          return Marker(
+            width: 80.0,
+            height: 80.0,
+            point: latLng,
+            child: Icon(
+              Icons.location_pin,
+              color: Colors.red,
+              size: 20.0,
+            ),
+          );
+        }).toList(),
+      );
+    },
+  );
 }
