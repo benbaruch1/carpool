@@ -9,9 +9,63 @@ class NotificationPage extends StatelessWidget {
       appBar: AppBar(
         title: Text('Notifications'),
         backgroundColor: Colors.green,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.mark_email_read),
+            onPressed: () {
+              _markAllAsRead(context);
+            },
+          ),
+          IconButton(
+            icon: Icon(Icons.delete_forever),
+            onPressed: () {
+              _deleteAllNotifications(context);
+            },
+          ),
+        ],
       ),
       body: NotificationList(),
     );
+  }
+
+  void _markAllAsRead(BuildContext context) {
+    final String currentUserId = FirebaseAuth.instance.currentUser!.uid;
+    FirebaseFirestore.instance
+        .collection('notifications')
+        .where('userId', isEqualTo: currentUserId)
+        .get()
+        .then((snapshot) {
+      for (var doc in snapshot.docs) {
+        doc.reference.update({'isRead': true});
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('All notifications marked as read')),
+      );
+    }).catchError((error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to mark notifications as read')),
+      );
+    });
+  }
+
+  void _deleteAllNotifications(BuildContext context) {
+    final String currentUserId = FirebaseAuth.instance.currentUser!.uid;
+    FirebaseFirestore.instance
+        .collection('notifications')
+        .where('userId', isEqualTo: currentUserId)
+        .get()
+        .then((snapshot) {
+      for (var doc in snapshot.docs) {
+        doc.reference.delete();
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('All notifications deleted')),
+      );
+    }).catchError((error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to delete notifications')),
+      );
+    });
   }
 }
 
