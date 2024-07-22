@@ -92,6 +92,7 @@ class _GroupPageState extends State<GroupPage> {
                           String status = groupData['status'] ?? 'not started';
 
                           if (status == 'started') {
+                            String currentDriver = groupData['nextDriver'];
                             return FutureBuilder<bool>(
                               future: _canEndDriveToday(),
                               builder: (context, endDriveSnapshot) {
@@ -100,14 +101,23 @@ class _GroupPageState extends State<GroupPage> {
                                   return CircularProgressIndicator();
                                 } else if (endDriveSnapshot.hasError) {
                                   return Text('Error');
-                                } else if (endDriveSnapshot.data!) {
+                                } else if (endDriveSnapshot.data! &&
+                                    currentDriver == widget.currentUserId) {
                                   return _buildEndDriveButton(
-                                      context, groupData['nextDriver']);
-                                } else {
+                                      context, currentDriver);
+                                } else if (endDriveSnapshot.data! &&
+                                    currentDriver != widget.currentUserId) {
+                                  return Text('The driver is on their way.',
+                                      style: TextStyle(color: Colors.green));
+                                } else if (currentDriver ==
+                                    widget.currentUserId) {
                                   return Text(
                                     'You can end the drive 10 minutes before the return time or until midnight.',
                                     style: TextStyle(color: Colors.red),
                                   );
+                                } else {
+                                  return Text('The driver is on their way.',
+                                      style: TextStyle(color: Colors.green));
                                 }
                               },
                             );
@@ -348,7 +358,7 @@ class _GroupPageState extends State<GroupPage> {
               int points = memberPoints[member] ?? 0;
               return Row(
                 children: [
-                  if (isCreator) Icon(Icons.star, color: Colors.green),
+                  if (isCreator) Text('(Creator) '),
                   Expanded(
                     flex: 2,
                     child: FutureBuilder<DocumentSnapshot>(
