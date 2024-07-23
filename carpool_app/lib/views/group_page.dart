@@ -34,7 +34,6 @@ class _GroupPageState extends State<GroupPage> {
       if (widget.group.thirdMeetingPoint.isNotEmpty)
         widget.group.thirdMeetingPoint,
     ];
-    List<LatLng> latLngList = [];
 
     return Scaffold(
       appBar: AppBar(
@@ -977,9 +976,22 @@ Future<void> notifyGroupAboutRideStart(
 Future<List<LatLng>> getLatLngFromAddresses(List<String> addresses) async {
   List<LatLng> latLngList = [];
   for (String address in addresses) {
-    List<Location> locations = await locationFromAddress(address);
-    if (locations.isNotEmpty) {
-      latLngList.add(LatLng(locations[0].latitude, locations[0].longitude));
+    try {
+      List<Location> locations = await locationFromAddress(address);
+      if (locations.isNotEmpty) {
+        latLngList.add(LatLng(locations[0].latitude, locations[0].longitude));
+      }
+    } catch (e) {
+      // if it is not recognized, try with Israel suffix
+      String newAddress = address + ", Israel";
+      try {
+        List<Location> locations = await locationFromAddress(newAddress);
+        if (locations.isNotEmpty) {
+          latLngList.add(LatLng(locations[0].latitude, locations[0].longitude));
+        }
+      } catch (e) {
+        print('Failed to get location for address: $address. Error: $e');
+      }
     }
   }
   return latLngList;
