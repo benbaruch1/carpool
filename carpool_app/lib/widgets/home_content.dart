@@ -130,37 +130,43 @@ class _HomeContentState extends State<HomeContent> {
                       return Text('User data not found');
                     } else {
                       return _buildWelcomeCard(
-                        'Welcome, ${snapshot.data!.firstName}',
+                        'Welcome back, ${snapshot.data!.firstName}',
                       );
                     }
                   },
                 ),
                 SizedBox(height: 30),
-                _buildCardButton(
-                  context,
-                  icon: Icons.search,
-                  label: 'Search a Ride',
-                  color: Colors.green,
-                  onTap: () {
-                    Navigator.push(
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _buildSquareButton(
                       context,
-                      MaterialPageRoute(builder: (context) => SearchRidePage()),
-                    );
-                  },
-                ),
-                SizedBox(height: 30),
-                _buildCardButton(
-                  context,
-                  icon: Icons.add,
-                  label: 'Create a Ride',
-                  color: Colors.blue,
-                  onTap: () {
-                    Navigator.push(
+                      icon: Icons.search,
+                      label: 'Search a Ride',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => SearchRidePage()),
+                        );
+                      },
+                    ),
+                    SizedBox(width: 70),
+                    _buildSquareButton(
                       context,
-                      MaterialPageRoute(builder: (context) => CreateRidePage()),
-                    );
-                  },
+                      icon: Icons.add,
+                      label: 'Create a Ride',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => CreateRidePage()),
+                        );
+                      },
+                    ),
+                  ],
                 ),
+                SizedBox(height: 30), // Add space below the buttons
               ],
             ),
           ),
@@ -170,80 +176,60 @@ class _HomeContentState extends State<HomeContent> {
   }
 
   Widget _buildWelcomeCard(String message) {
-    return Card(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(15),
+    return Container(
+      padding: EdgeInsets.all(20),
+      margin: EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.3), // Transparent black background
+        borderRadius: BorderRadius.circular(10),
       ),
-      elevation: 5,
-      child: Container(
-        padding: EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.green, Colors.lightGreen],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.person, size: 30, color: Colors.white),
+          SizedBox(width: 10),
+          Text(
+            message,
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
           ),
-          borderRadius: BorderRadius.circular(15),
-        ),
-        child: Row(
-          children: [
-            CircleAvatar(
-              radius: 30,
-              backgroundColor: Colors.white,
-              child: Icon(
-                Icons.person,
-                color: Colors.green,
-                size: 30,
-              ),
-            ),
-            SizedBox(width: 20),
-            Text(
-              message,
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-          ],
-        ),
+        ],
       ),
     );
   }
 
-  Widget _buildCardButton(BuildContext context,
+  Widget _buildSquareButton(BuildContext context,
       {required IconData icon,
       required String label,
-      required Color color,
       required Function() onTap}) {
-    return Card(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(15),
-      ),
-      elevation: 4,
-      child: InkWell(
-        onTap: onTap,
-        child: Container(
-          padding: EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(15),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-              Icon(icon, size: 40, color: color),
-              SizedBox(width: 20),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                ),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 150,
+        height: 150,
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.1), // Transparent black tint
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(color: Colors.green, width: 2), // Green border
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 40, color: Colors.green),
+            SizedBox(height: 10),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.green,
               ),
-            ],
-          ),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
       ),
     );
