@@ -58,7 +58,7 @@ class _HomeContentState extends State<HomeContent> {
             appBar: AppBar(
               title:
                   Text(_selectedIndex == 0 ? 'Home' : _titles[_selectedIndex]),
-              backgroundColor: Colors.green,
+              backgroundColor: Color.fromARGB(0, 113, 183, 115),
               actions: [
                 IconButton(
                   icon: Icon(Icons.logout),
@@ -72,50 +72,28 @@ class _HomeContentState extends State<HomeContent> {
             body: _selectedIndex == 0
                 ? _buildHomePage(context)
                 : _widgetOptions.elementAt(_selectedIndex - 1),
-            bottomNavigationBar: BottomNavigationBar(
-              items: const <BottomNavigationBarItem>[
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.home, size: 30),
-                  label: 'Home',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.directions_car, size: 30),
-                  label: 'My Rides',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.notifications, size: 30),
-                  label: 'Notifications',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.person, size: 30),
-                  label: 'My Profile',
-                ),
-              ],
-              currentIndex: _selectedIndex,
-              selectedItemColor: Colors.green,
-              unselectedItemColor: Colors.grey,
-              selectedLabelStyle:
-                  TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-              unselectedLabelStyle: TextStyle(fontSize: 12),
-              onTap: _onItemTapped,
-              type: BottomNavigationBarType.fixed,
-            ),
+            bottomNavigationBar: _buildBottomNavigationBar(),
           );
   }
 
   Widget _buildHomePage(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.green.shade200, Colors.white],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: Column(
+            children: [
+              Expanded(
+                flex: 2,
+                child: Container(
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
         ),
-      ),
-      child: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: SingleChildScrollView(
+        SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
@@ -135,14 +113,14 @@ class _HomeContentState extends State<HomeContent> {
                     }
                   },
                 ),
-                SizedBox(height: 30),
+                SizedBox(height: 20),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     _buildSquareButton(
                       context,
-                      icon: Icons.search,
-                      label: 'Search a Ride',
+                      label: 'Find a Ride',
+                      iconAsset: 'assets/search.png',
                       onTap: () {
                         Navigator.push(
                           context,
@@ -151,11 +129,10 @@ class _HomeContentState extends State<HomeContent> {
                         );
                       },
                     ),
-                    SizedBox(width: 70),
                     _buildSquareButton(
                       context,
-                      icon: Icons.add,
                       label: 'Create a Ride',
+                      iconAsset: 'assets/create.png',
                       onTap: () {
                         Navigator.push(
                           context,
@@ -166,34 +143,43 @@ class _HomeContentState extends State<HomeContent> {
                     ),
                   ],
                 ),
-                SizedBox(height: 30), // Add space below the buttons
+                SizedBox(height: 20),
+                SizedBox(
+                  height: 300,
+                  width: double.infinity,
+                  child: Image.asset(
+                    'assets/home.png',
+                    fit: BoxFit.cover,
+                  ),
+                ),
               ],
             ),
           ),
         ),
-      ),
+      ],
     );
   }
 
   Widget _buildWelcomeCard(String message) {
     return Container(
-      padding: EdgeInsets.all(20),
+      padding: EdgeInsets.all(7),
       margin: EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.3), // Transparent black background
+        color: Colors.white,
         borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.green, width: 1),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.person, size: 30, color: Colors.white),
+          Icon(Icons.person, size: 20, color: Colors.green),
           SizedBox(width: 10),
           Text(
             message,
             style: TextStyle(
-              fontSize: 24,
+              fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: Colors.green,
             ),
           ),
         ],
@@ -202,34 +188,82 @@ class _HomeContentState extends State<HomeContent> {
   }
 
   Widget _buildSquareButton(BuildContext context,
-      {required IconData icon,
-      required String label,
-      required Function() onTap}) {
+      {required String label,
+      required Function() onTap,
+      IconData? icon,
+      String? iconAsset}) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 150,
+        width: 180,
         height: 150,
+        margin: EdgeInsets.symmetric(vertical: 8.0),
         decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.1), // Transparent black tint
+          color: Color.fromARGB(255, 217, 239, 220),
           borderRadius: BorderRadius.circular(15),
-          border: Border.all(color: Colors.green, width: 2), // Green border
+          border: Border.all(color: Colors.green, width: 1),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 40, color: Colors.green),
+            if (iconAsset != null)
+              Image.asset(iconAsset, width: 70, height: 70)
+            else if (icon != null)
+              Icon(icon, size: 50, color: Colors.green),
             SizedBox(height: 10),
             Text(
               label,
               style: TextStyle(
-                fontSize: 20,
+                fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: Colors.green,
               ),
               textAlign: TextAlign.center,
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBottomNavigationBar() {
+    return Container(
+      margin: EdgeInsets.only(bottom: 10, left: 20, right: 20),
+      decoration: BoxDecoration(
+        color: Colors.green,
+        borderRadius: BorderRadius.circular(30),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(30),
+        child: BottomNavigationBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          items: const <BottomNavigationBarItem>[
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home, size: 30),
+              label: 'Home',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.directions_car, size: 30),
+              label: 'My Rides',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.notifications, size: 30),
+              label: 'Notifications',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person, size: 30),
+              label: 'My Profile',
+            ),
+          ],
+          currentIndex: _selectedIndex,
+          selectedItemColor: Colors.white,
+          unselectedItemColor: Colors.white70,
+          selectedLabelStyle:
+              TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+          unselectedLabelStyle: TextStyle(fontSize: 12),
+          onTap: _onItemTapped,
+          type: BottomNavigationBarType.fixed,
         ),
       ),
     );

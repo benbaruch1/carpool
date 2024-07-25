@@ -5,7 +5,7 @@ import 'package:carpool_app/services/firebase_auth_service.dart';
 import 'package:carpool_app/shared/loading.dart';
 import 'package:carpool_app/views/home_wrapper.dart';
 import 'package:carpool_app/widgets/home_content.dart';
-import 'package:carpool_app/views/myprofile_page.dart'; // ודא שהקובץ מיובא כאן
+import 'package:carpool_app/views/myprofile_page.dart';
 
 class HomePage extends StatefulWidget {
   @override
