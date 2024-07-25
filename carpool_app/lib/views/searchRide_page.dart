@@ -5,6 +5,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:carpool_app/views/group_page.dart';
 import 'package:carpool_app/services/database.dart';
 import 'package:carpool_app/widgets/custom_button.dart';
+import 'package:carpool_app/widgets/top_bar.dart';
+import 'package:carpool_app/widgets/bottom_bar.dart';
 
 class SearchRidePage extends StatefulWidget {
   @override
@@ -20,6 +22,7 @@ class _SearchRidePageState extends State<SearchRidePage> {
   final List<String> selectedDays = [];
   bool _showFullGroups = true;
   Future<List<Group>>? _searchResults;
+  int _selectedIndex = 0;
 
   DatabaseService databaseService =
       DatabaseService(FirebaseAuth.instance.currentUser!.uid);
@@ -53,27 +56,16 @@ class _SearchRidePageState extends State<SearchRidePage> {
     }
   }
 
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () {
-            Navigator.of(context).pop();
-          },
-        ),
-        title: Text(
-          'Search a ride',
-          style: TextStyle(
-            fontSize: 32,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
-          ),
-        ),
-      ),
+      appBar: TopBar(title: 'Search a ride', showBackButton: false),
       body: Container(
         color: Colors.white,
         child: Center(
@@ -222,11 +214,16 @@ class _SearchRidePageState extends State<SearchRidePage> {
                           },
                         )
                       : Container(),
+                  SizedBox(height: 20),
                 ],
               ),
             ),
           ),
         ),
+      ),
+      bottomNavigationBar: BottomBar(
+        selectedIndex: _selectedIndex,
+        onItemTapped: _onItemTapped,
       ),
     );
   }

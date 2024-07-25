@@ -9,6 +9,8 @@ import 'package:carpool_app/views/myRides_page.dart';
 import 'package:carpool_app/views/notification_page.dart';
 import 'package:carpool_app/views/createRide_page.dart';
 import 'package:carpool_app/views/searchRide_page.dart';
+import 'package:carpool_app/widgets/top_bar.dart';
+import 'package:carpool_app/widgets/bottom_bar.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -22,6 +24,7 @@ class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
 
   final List<Widget> _widgetOptions = <Widget>[
+    HomePage(),
     MyRidesPage(),
     NotificationPage(),
     ProfilePage(),
@@ -38,6 +41,10 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       _selectedIndex = index;
     });
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => _widgetOptions[index]),
+    );
   }
 
   @override
@@ -47,27 +54,16 @@ class _HomePageState extends State<HomePage> {
     return loading
         ? Loading()
         : Scaffold(
-            appBar: AppBar(
-              title:
-                  Text(_selectedIndex == 0 ? 'Home' : _titles[_selectedIndex]),
-              backgroundColor: Color.fromARGB(0, 113, 183, 115),
-              actions: [
-                IconButton(
-                  icon: Icon(Icons.logout),
-                  onPressed: () async {
-                    await _auth.signOut();
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => HomeWrapper()),
-                    );
-                  },
-                )
-              ],
-            ),
+            appBar: TopBar(
+                title: _selectedIndex == 0 ? 'Home' : _titles[_selectedIndex],
+                showBackButton: false),
             body: _selectedIndex == 0
                 ? _buildHomePage(context, myUser)
                 : _widgetOptions.elementAt(_selectedIndex - 1),
-            bottomNavigationBar: _buildBottomNavigationBar(),
+            bottomNavigationBar: BottomBar(
+              selectedIndex: _selectedIndex,
+              onItemTapped: _onItemTapped,
+            ),
           );
   }
 
@@ -112,34 +108,29 @@ class _HomePageState extends State<HomePage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    Expanded(
-                      child: _buildSquareButton(
-                        context,
-                        label: 'Find a Ride',
-                        iconAsset: 'assets/search.png',
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => SearchRidePage()),
-                          );
-                        },
-                      ),
+                    _buildSquareButton(
+                      context,
+                      label: 'Find a Ride',
+                      iconAsset: 'assets/search.png',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => SearchRidePage()),
+                        );
+                      },
                     ),
-                    SizedBox(width: 16),
-                    Expanded(
-                      child: _buildSquareButton(
-                        context,
-                        label: 'Create a Ride',
-                        iconAsset: 'assets/create.png',
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => CreateRidePage()),
-                          );
-                        },
-                      ),
+                    _buildSquareButton(
+                      context,
+                      label: 'Create a Ride',
+                      iconAsset: 'assets/create.png',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => CreateRidePage()),
+                        );
+                      },
                     ),
                   ],
                 ),
@@ -225,53 +216,4 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
-
-  Widget _buildBottomNavigationBar() {
-    return Container(
-      margin: EdgeInsets.only(bottom: 10, left: 20, right: 20),
-      decoration: BoxDecoration(
-        color: Colors.green,
-        borderRadius: BorderRadius.circular(30),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(30),
-        child: BottomNavigationBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          items: const <BottomNavigationBarItem>[
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home, size: 30),
-              label: 'Home',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.directions_car, size: 30),
-              label: 'My Rides',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.notifications, size: 30),
-              label: 'Notifications',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person, size: 30),
-              label: 'My Profile',
-            ),
-          ],
-          currentIndex: _selectedIndex,
-          selectedItemColor: Colors.white,
-          unselectedItemColor: Colors.white70,
-          selectedLabelStyle:
-              TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-          unselectedLabelStyle: TextStyle(fontSize: 12),
-          onTap: _onItemTapped,
-          type: BottomNavigationBarType.fixed,
-        ),
-      ),
-    );
-  }
-}
-
-void main() {
-  runApp(MaterialApp(
-    home: HomePage(),
-  ));
 }

@@ -3,6 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:carpool_app/models/group.dart';
 import 'package:carpool_app/views/group_page.dart';
+import 'package:carpool_app/widgets/top_bar.dart';
+import 'package:carpool_app/widgets/bottom_bar.dart';
 
 class MyRidesPage extends StatefulWidget {
   @override
@@ -10,6 +12,8 @@ class MyRidesPage extends StatefulWidget {
 }
 
 class _MyRidesPageState extends State<MyRidesPage> {
+  int _selectedIndex = 1;
+
   Future<List<DocumentSnapshot>> _fetchUserRides() async {
     User? user = FirebaseAuth.instance.currentUser;
     if (user == null) {
@@ -61,21 +65,16 @@ class _MyRidesPageState extends State<MyRidesPage> {
     }
   }
 
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('My Rides'),
-        backgroundColor: Colors.green,
-        actions: [
-          IconButton(
-            icon: Icon(Icons.directions_car),
-            onPressed: () {
-              // Add any action you need here
-            },
-          ),
-        ],
-      ),
+      appBar: TopBar(title: 'My Rides', showBackButton: false),
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -126,6 +125,10 @@ class _MyRidesPageState extends State<MyRidesPage> {
             },
           ),
         ),
+      ),
+      bottomNavigationBar: BottomBar(
+        selectedIndex: _selectedIndex,
+        onItemTapped: _onItemTapped,
       ),
     );
   }

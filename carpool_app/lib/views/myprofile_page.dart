@@ -4,6 +4,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:carpool_app/shared/loading.dart';
 import 'package:carpool_app/widgets/custom_button.dart';
+import 'package:carpool_app/widgets/top_bar.dart';
+import 'package:carpool_app/widgets/bottom_bar.dart';
 
 class ProfilePage extends StatefulWidget {
   @override
@@ -16,6 +18,7 @@ class _ProfilePageState extends State<ProfilePage> {
   TextEditingController _addressController = TextEditingController();
   TextEditingController _phoneNumberController = TextEditingController();
   TextEditingController _emailController = TextEditingController();
+  int _selectedIndex = 3;
 
   String error = '';
 
@@ -26,6 +29,12 @@ class _ProfilePageState extends State<ProfilePage> {
         .doc(user!.uid)
         .get();
     return snapshot.data()!;
+  }
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
   }
 
   @override
@@ -44,6 +53,7 @@ class _ProfilePageState extends State<ProfilePage> {
           _phoneNumberController.text = snapshot.data!['phoneNumber'] ?? '';
 
           return Scaffold(
+            appBar: TopBar(title: 'My Profile', showBackButton: false),
             body: Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -134,6 +144,10 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                 ),
               ),
+            ),
+            bottomNavigationBar: BottomBar(
+              selectedIndex: _selectedIndex,
+              onItemTapped: _onItemTapped,
             ),
           );
         } else {

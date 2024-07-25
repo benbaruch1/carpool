@@ -1,11 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:carpool_app/widgets/top_bar.dart';
+import 'package:carpool_app/widgets/bottom_bar.dart';
 
-class NotificationPage extends StatelessWidget {
+class NotificationPage extends StatefulWidget {
+  @override
+  _NotificationPageState createState() => _NotificationPageState();
+}
+
+class _NotificationPageState extends State<NotificationPage> {
+  int _selectedIndex = 2;
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: TopBar(title: 'Notifications', showBackButton: false),
       body: Column(
         children: [
           Row(
@@ -29,6 +45,10 @@ class NotificationPage extends StatelessWidget {
             child: NotificationList(),
           ),
         ],
+      ),
+      bottomNavigationBar: BottomBar(
+        selectedIndex: _selectedIndex,
+        onItemTapped: _onItemTapped,
       ),
     );
   }
