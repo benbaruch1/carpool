@@ -26,6 +26,7 @@ class MyApp extends StatelessWidget {
         title: 'Carpool',
         theme: ThemeData(
           primarySwatch: Colors.blue,
+          fontFamily: 'Clash Grotesk Light',
         ),
         initialRoute: '/home',
         routes: {

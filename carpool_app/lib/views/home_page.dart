@@ -112,29 +112,34 @@ class _HomePageState extends State<HomePage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    _buildSquareButton(
-                      context,
-                      label: 'Find a Ride',
-                      iconAsset: 'assets/search.png',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => SearchRidePage()),
-                        );
-                      },
+                    Expanded(
+                      child: _buildSquareButton(
+                        context,
+                        label: 'Find a Ride',
+                        iconAsset: 'assets/search.png',
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => SearchRidePage()),
+                          );
+                        },
+                      ),
                     ),
-                    _buildSquareButton(
-                      context,
-                      label: 'Create a Ride',
-                      iconAsset: 'assets/create.png',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => CreateRidePage()),
-                        );
-                      },
+                    SizedBox(width: 16),
+                    Expanded(
+                      child: _buildSquareButton(
+                        context,
+                        label: 'Create a Ride',
+                        iconAsset: 'assets/create.png',
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => CreateRidePage()),
+                          );
+                        },
+                      ),
                     ),
                   ],
                 ),
