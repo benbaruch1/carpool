@@ -3,11 +3,17 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:carpool_app/models/group.dart';
 import 'package:carpool_app/views/notification_page.dart';
+import 'package:carpool_app/views/home_page.dart';
+import 'package:carpool_app/views/myRides_page.dart';
+import 'package:carpool_app/views/myprofile_page.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:carpool_app/widgets/top_bar.dart';
+import 'package:carpool_app/widgets/bottom_bar.dart';
+import 'package:carpool_app/widgets/custom_button.dart';
 
 class GroupPage extends StatefulWidget {
   final Group group;
@@ -21,6 +27,15 @@ class GroupPage extends StatefulWidget {
 
 class _GroupPageState extends State<GroupPage> {
   bool isDriverOnTheWay = false;
+  int _selectedIndex = 0; // Added to manage BottomBar selection
+
+  static List<Widget> _widgetOptions = <Widget>[
+    // Add your page widgets here. For example:
+    HomePage(),
+    MyRidesPage(),
+    NotificationPage(),
+    ProfilePage(),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -36,18 +51,11 @@ class _GroupPageState extends State<GroupPage> {
     ];
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.group.rideName),
-        backgroundColor: Colors.green,
-      ),
+      appBar: TopBar(
+          title: widget.group.rideName,
+          showBackButton: true), // Use the existing TopBar with back button
       body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.green.shade200, Colors.white],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
+        color: Colors.white, // Set the background color to white
         child: Column(
           children: [
             Expanded(
@@ -198,31 +206,23 @@ class _GroupPageState extends State<GroupPage> {
             if (isMember)
               Padding(
                 padding: const EdgeInsets.all(14.0),
-                child: ElevatedButton(
+                child: CustomButton(
+                  label: 'Leave Group',
+                  color: Colors.red, // צבע אדום לכפתור
                   onPressed: () async {
                     await _leaveGroup(context);
                   },
-                  child: Text('Leave Group'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    padding: EdgeInsets.symmetric(horizontal: 25, vertical: 15),
-                    textStyle: TextStyle(fontSize: 14),
-                  ),
                 ),
               ),
             if (!isMember && !isFull)
               Padding(
                 padding: const EdgeInsets.all(14.0),
-                child: ElevatedButton(
+                child: CustomButton(
+                  label: 'Join Group',
+                  color: Colors.green, // צבע ירוק לכפתור
                   onPressed: () async {
                     await _joinGroup(context);
                   },
-                  child: Text('Join Group'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    padding: EdgeInsets.symmetric(horizontal: 25, vertical: 15),
-                    textStyle: TextStyle(fontSize: 14),
-                  ),
                 ),
               ),
             if (isFull)
@@ -237,6 +237,18 @@ class _GroupPageState extends State<GroupPage> {
               ),
           ],
         ),
+      ),
+      bottomNavigationBar: BottomBar(
+        selectedIndex: _selectedIndex,
+        onItemTapped: (index) {
+          setState(() {
+            _selectedIndex = index;
+          });
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => _widgetOptions[index]),
+          );
+        },
       ),
     );
   }
@@ -355,55 +367,65 @@ class _GroupPageState extends State<GroupPage> {
             children: members.map((member) {
               bool isCreator = member == userId;
               int points = memberPoints[member] ?? 0;
-              return Row(
-                children: [
-                  if (isCreator) Text('(Creator) '),
-                  Expanded(
-                    flex: 2,
-                    child: FutureBuilder<DocumentSnapshot>(
-                      future: FirebaseFirestore.instance
-                          .collection('users')
-                          .doc(member)
-                          .get(),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return Text('Loading...');
-                        } else if (snapshot.hasError) {
-                          return Text('Error');
-                        } else {
-                          if (snapshot.data == null || !snapshot.data!.exists) {
-                            return Text('User not found');
-                          }
+              return Container(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade100,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                margin: const EdgeInsets.symmetric(vertical: 4.0),
+                child: Row(
+                  children: [
+                    if (isCreator) Text('(Creator) '),
+                    Expanded(
+                      flex: 2,
+                      child: FutureBuilder<DocumentSnapshot>(
+                        future: FirebaseFirestore.instance
+                            .collection('users')
+                            .doc(member)
+                            .get(),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return Text('Loading...');
+                          } else if (snapshot.hasError) {
+                            return Text('Error');
+                          } else {
+                            if (snapshot.data == null ||
+                                !snapshot.data!.exists) {
+                              return Text('User not found');
+                            }
 
-                          Map<String, dynamic> userData =
-                              snapshot.data!.data() as Map<String, dynamic>;
-                          String memberName =
-                              userData['firstName'] ?? 'Unknown';
-                          return InkWell(
-                            onTap: () => _showDriverDetails(context, member),
-                            child: Text(
-                              memberName,
-                              style: TextStyle(
-                                color: isCreator ? Colors.green : Colors.black,
-                                decoration: TextDecoration.underline,
+                            Map<String, dynamic> userData =
+                                snapshot.data!.data() as Map<String, dynamic>;
+                            String memberName =
+                                userData['firstName'] ?? 'Unknown';
+                            return InkWell(
+                              onTap: () => _showDriverDetails(context, member),
+                              child: Text(
+                                memberName,
+                                style: TextStyle(
+                                  color:
+                                      isCreator ? Colors.green : Colors.black,
+                                  decoration: TextDecoration.underline,
+                                ),
                               ),
-                            ),
-                          );
-                        }
-                      },
-                    ),
-                  ),
-                  Expanded(
-                    child: Text(
-                      points.toString(),
-                      style: TextStyle(
-                        color: isCreator ? Colors.green : Colors.black,
+                            );
+                          }
+                        },
                       ),
-                      textAlign: TextAlign.right,
                     ),
-                  ),
-                ],
+                    Expanded(
+                      child: Text(
+                        points.toString(),
+                        style: TextStyle(
+                          color: isCreator ? Colors.green : Colors.black,
+                        ),
+                        textAlign: TextAlign.right,
+                      ),
+                    ),
+                  ],
+                ),
               );
             }).toList(),
           );

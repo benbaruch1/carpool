@@ -3,14 +3,21 @@ import 'package:flutter/material.dart';
 class CustomButton extends StatelessWidget {
   final String label;
   final Function onPressed;
+  final Color? color; // Optional color parameter
 
   CustomButton({
     required this.label,
     required this.onPressed,
+    this.color, // Initialize color parameter
   });
 
   @override
   Widget build(BuildContext context) {
+    Color buttonColor =
+        color ?? Color.fromARGB(255, 85, 171, 88); // Default color
+    Color iconColor =
+        color ?? Color.fromARGB(255, 102, 205, 136); // Default icon color
+
     return GestureDetector(
       onTap: () => onPressed(),
       child: Container(
@@ -18,7 +25,7 @@ class CustomButton extends StatelessWidget {
         height: 55, // Adjust height of the button
         margin: EdgeInsets.symmetric(vertical: 8.0),
         decoration: BoxDecoration(
-          color: Color.fromARGB(255, 85, 171, 88), // Darker mint green color
+          color: buttonColor, // Use the color parameter or default color
           borderRadius: BorderRadius.circular(30),
         ),
         child: Row(
@@ -46,8 +53,7 @@ class CustomButton extends StatelessWidget {
               ),
               child: Icon(
                 Icons.arrow_forward,
-                color: Color.fromARGB(
-                    255, 102, 205, 136), // Darker mint green color
+                color: iconColor, // Use the color parameter or default color
                 size: 24, // Adjust size of the icon
               ),
             ),
