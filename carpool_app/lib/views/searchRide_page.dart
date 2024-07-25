@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:carpool_app/views/group_page.dart';
 import 'package:carpool_app/services/database.dart';
+import 'package:carpool_app/widgets/custom_button.dart';
 
 class SearchRidePage extends StatefulWidget {
   @override
@@ -29,7 +30,6 @@ class _SearchRidePageState extends State<SearchRidePage> {
       departureTime: _departureTimeController.text,
       selectedDays: selectedDays,
       userId: _userNameController.text,
-      //returnTime: _returnTimeController.text,
       rideName: _rideNameController.text,
     );
 
@@ -57,17 +57,25 @@ class _SearchRidePageState extends State<SearchRidePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Search a ride'),
-        backgroundColor: Colors.green,
-      ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.green.shade200, Colors.white],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+        ),
+        title: Text(
+          'Search a ride',
+          style: TextStyle(
+            fontSize: 32,
+            fontWeight: FontWeight.bold,
+            color: Colors.black,
           ),
         ),
+      ),
+      body: Container(
+        color: Colors.white,
         child: Center(
           child: SingleChildScrollView(
             child: Padding(
@@ -75,19 +83,12 @@ class _SearchRidePageState extends State<SearchRidePage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: <Widget>[
-                  Text(
-                    'Search a ride',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
-                  ),
                   SizedBox(height: 20),
-                  _buildTextField(
-                      'Creator\'s first name:', _userNameController),
+                  _buildTextField('Creator\'s first name:', _userNameController,
+                      icon: Icons.person),
                   SizedBox(height: 10),
-                  _buildTextField('Meeting point:', _meetingPointController),
+                  _buildTextField('Meeting point:', _meetingPointController,
+                      icon: Icons.location_on),
                   SizedBox(height: 10),
                   Text(
                     'Schedule:',
@@ -114,9 +115,10 @@ class _SearchRidePageState extends State<SearchRidePage> {
                   ),
                   SizedBox(height: 10),
                   _buildTextField('Departure time:', _departureTimeController,
-                      isTime: true),
+                      icon: Icons.access_time, isTime: true),
                   SizedBox(height: 10),
-                  _buildTextField('Ride name:', _rideNameController),
+                  _buildTextField('Ride name:', _rideNameController,
+                      icon: Icons.directions_car),
                   SizedBox(height: 20),
                   Row(
                     children: [
@@ -132,15 +134,9 @@ class _SearchRidePageState extends State<SearchRidePage> {
                     ],
                   ),
                   SizedBox(height: 20),
-                  ElevatedButton(
+                  CustomButton(
+                    label: 'Search',
                     onPressed: _searchRides,
-                    child: Text('Search'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      padding:
-                          EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-                      textStyle: TextStyle(fontSize: 18),
-                    ),
                   ),
                   SizedBox(height: 20),
                   _searchResults != null
@@ -226,13 +222,6 @@ class _SearchRidePageState extends State<SearchRidePage> {
                           },
                         )
                       : Container(),
-                  SizedBox(height: 20),
-                  IconButton(
-                    icon: Icon(Icons.arrow_back, color: Colors.green, size: 50),
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                  ),
                 ],
               ),
             ),
@@ -243,7 +232,7 @@ class _SearchRidePageState extends State<SearchRidePage> {
   }
 
   Widget _buildTextField(String label, TextEditingController controller,
-      {bool isTime = false}) {
+      {IconData? icon, bool isTime = false}) {
     return Row(
       children: [
         Expanded(
@@ -252,7 +241,28 @@ class _SearchRidePageState extends State<SearchRidePage> {
             readOnly: isTime,
             decoration: InputDecoration(
               labelText: label,
-              border: OutlineInputBorder(),
+              prefixIcon: icon != null ? Icon(icon, color: Colors.green) : null,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15.0),
+                borderSide: BorderSide(
+                  color: Colors.green,
+                  width: 2.0,
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15.0),
+                borderSide: BorderSide(
+                  color: Colors.green,
+                  width: 2.0,
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15.0),
+                borderSide: BorderSide(
+                  color: Colors.green,
+                  width: 2.0,
+                ),
+              ),
               filled: true,
               fillColor: Colors.white,
             ),

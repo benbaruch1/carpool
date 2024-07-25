@@ -6,25 +6,30 @@ class NotificationPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Notifications'),
-        backgroundColor: Colors.green,
-        actions: [
-          IconButton(
-            icon: Icon(Icons.mark_email_read),
-            onPressed: () {
-              _markAllAsRead(context);
-            },
+      body: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              IconButton(
+                icon: Icon(Icons.mark_email_read, color: Colors.green),
+                onPressed: () {
+                  _markAllAsRead(context);
+                },
+              ),
+              IconButton(
+                icon: Icon(Icons.delete_forever, color: Colors.green),
+                onPressed: () {
+                  _deleteAllNotifications(context);
+                },
+              ),
+            ],
           ),
-          IconButton(
-            icon: Icon(Icons.delete_forever),
-            onPressed: () {
-              _deleteAllNotifications(context);
-            },
+          Expanded(
+            child: NotificationList(),
           ),
         ],
       ),
-      body: NotificationList(),
     );
   }
 
