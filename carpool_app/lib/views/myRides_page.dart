@@ -76,13 +76,7 @@ class _MyRidesPageState extends State<MyRidesPage> {
     return Scaffold(
       appBar: TopBar(title: 'My Rides', showBackButton: false),
       body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.green.shade200, Colors.white],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
+        color: Colors.white,
         child: Center(
           child: FutureBuilder<List<DocumentSnapshot>>(
             future: _fetchUserRides(),
@@ -98,25 +92,29 @@ class _MyRidesPageState extends State<MyRidesPage> {
                   itemCount: snapshot.data!.length,
                   itemBuilder: (context, index) {
                     DocumentSnapshot ride = snapshot.data![index];
-                    return Card(
-                      margin:
-                          EdgeInsets.symmetric(vertical: 10, horizontal: 15),
-                      child: ListTile(
-                        contentPadding: EdgeInsets.all(15),
-                        title: Text(
-                          ride['rideName'],
-                          style: TextStyle(
-                              fontSize: 20, fontWeight: FontWeight.bold),
+                    return InkWell(
+                      onTap: () {
+                        _navigateToGroupPage(context, ride);
+                      },
+                      splashColor: Colors.green.withAlpha(30),
+                      highlightColor: Colors.green.withAlpha(50),
+                      child: Container(
+                        margin:
+                            EdgeInsets.symmetric(vertical: 10, horizontal: 15),
+                        decoration: BoxDecoration(
+                          color: Color.fromARGB(255, 217, 239, 220),
+                          border: Border.all(color: Colors.green, width: 2),
+                          borderRadius: BorderRadius.circular(10),
                         ),
-                        trailing: IconButton(
-                          icon: Icon(Icons.info, color: Colors.green),
-                          onPressed: () {
-                            _navigateToGroupPage(context, ride);
-                          },
+                        child: ListTile(
+                          contentPadding: EdgeInsets.all(15),
+                          title: Text(
+                            ride['rideName'],
+                            style: TextStyle(
+                                fontSize: 20, fontWeight: FontWeight.bold),
+                          ),
+                          trailing: Icon(Icons.info, color: Colors.green),
                         ),
-                        onTap: () {
-                          _navigateToGroupPage(context, ride);
-                        },
                       ),
                     );
                   },
