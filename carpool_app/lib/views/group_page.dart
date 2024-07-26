@@ -27,10 +27,9 @@ class GroupPage extends StatefulWidget {
 
 class _GroupPageState extends State<GroupPage> {
   bool isDriverOnTheWay = false;
-  int _selectedIndex = 0; // Added to manage BottomBar selection
+  int _selectedIndex = 0;
 
   static List<Widget> _widgetOptions = <Widget>[
-    // Add your page widgets here. For example:
     HomePage(),
     MyRidesPage(),
     NotificationPage(),
@@ -205,10 +204,10 @@ class _GroupPageState extends State<GroupPage> {
             ),
             if (isMember)
               Padding(
-                padding: const EdgeInsets.all(14.0),
+                padding: const EdgeInsets.all(10.0),
                 child: CustomButton(
                   label: 'Leave Group',
-                  color: Colors.red, // צבע אדום לכפתור
+                  color: Colors.red,
                   onPressed: () async {
                     await _leaveGroup(context);
                   },
@@ -219,7 +218,7 @@ class _GroupPageState extends State<GroupPage> {
                 padding: const EdgeInsets.all(14.0),
                 child: CustomButton(
                   label: 'Join Group',
-                  color: Colors.green, // צבע ירוק לכפתור
+                  color: Colors.green,
                   onPressed: () async {
                     await _joinGroup(context);
                   },
@@ -638,6 +637,8 @@ class _GroupPageState extends State<GroupPage> {
           userId: widget.currentUserId,
         );
 
+        notifyGroupForNewUserJoin(widget.group, widget.currentUserId);
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('You have joined the group')),
         );
@@ -993,6 +994,27 @@ Future<void> notifyGroupAboutRideStart(
         ' has just started. Please be ready at the meeting point.',
     userIds: userIds,
   );
+}
+
+Future<void> notifyGroupForNewUserJoin(
+    Group group, String currentUserId) async {
+  DocumentSnapshot userSnapshot = await FirebaseFirestore.instance
+      .collection('users')
+      .doc(currentUserId)
+      .get();
+  if (userSnapshot.exists) {
+    Map<String, dynamic> userData = userSnapshot.data() as Map<String, dynamic>;
+    String newUserName = userData['firstName'] ?? 'User';
+
+    // Filter out the current driver from the user IDs
+    List<String> userIds =
+        group.members.where((userId) => userId != currentUserId).toList();
+    await sendNotificationToGroupMembers(
+      title: "New user join to " + group.rideName + " ride",
+      body: "Welcome " + newUserName + " to the ride.",
+      userIds: userIds,
+    );
+  }
 }
 
 Future<List<LatLng>> getLatLngFromAddresses(List<String> addresses) async {

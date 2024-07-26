@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:carpool_app/views/myRides_page.dart';
-import 'package:carpool_app/views/home_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:carpool_app/views/home_page.dart';
+import 'package:carpool_app/views/myRides_page.dart';
 import 'package:carpool_app/views/notification_page.dart';
+import 'package:carpool_app/views/myprofile_page.dart';
+import 'package:carpool_app/widgets/top_bar.dart';
+import 'package:carpool_app/widgets/bottom_bar.dart';
+import 'package:carpool_app/widgets/custom_button.dart';
 
 class CreateRidePage extends StatefulWidget {
   @override
@@ -32,6 +36,16 @@ class _CreateRidePageState extends State<CreateRidePage> {
   final TextEditingController _thirdMeetingPointController =
       TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+
+  int _selectedIndex = 0;
+  int _meetingPointsCount = 1;
+
+  static List<Widget> _widgetOptions = <Widget>[
+    HomePage(),
+    MyRidesPage(),
+    NotificationPage(),
+    ProfilePage(),
+  ];
 
   @override
   void initState() {
@@ -149,21 +163,33 @@ class _CreateRidePageState extends State<CreateRidePage> {
     }
   }
 
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => _widgetOptions[index]),
+    );
+  }
+
+  void _addMeetingPoint() {
+    if (_meetingPointsCount < 3) {
+      setState(() {
+        _meetingPointsCount++;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Create group'),
-        backgroundColor: Colors.green,
+      appBar: TopBar(
+        title: 'Create group',
+        showBackButton: true,
       ),
       body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.green.shade200, Colors.white],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
+        color: Colors.white, // Set the background color to white
         child: Center(
           child: SingleChildScrollView(
             child: Padding(
@@ -173,26 +199,37 @@ class _CreateRidePageState extends State<CreateRidePage> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: <Widget>[
-                    Text(
-                      'Create group',
-                      style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black),
-                    ),
-                    SizedBox(height: 20),
                     buildTextFieldWithAsterisk(
                         'Group name:', _rideNameController, true),
                     SizedBox(height: 20),
                     buildTextFieldWithAsterisk('Set first meeting point:',
                         _firstMeetingPointController, true),
-                    SizedBox(height: 20),
-                    buildTextFieldWithAsterisk('Set second meeting point:',
-                        _secondMeetingPointController, false),
+                    if (_meetingPointsCount > 1) SizedBox(height: 20),
+                    if (_meetingPointsCount > 1)
+                      buildTextFieldWithAsterisk('Set second meeting point:',
+                          _secondMeetingPointController, false),
+                    if (_meetingPointsCount > 2) SizedBox(height: 20),
+                    if (_meetingPointsCount > 2)
+                      buildTextFieldWithAsterisk('Set third meeting point:',
+                          _thirdMeetingPointController, false),
                     SizedBox(height: 10),
-                    buildTextFieldWithAsterisk('Set third meeting point:',
-                        _thirdMeetingPointController, false),
+                    if (_meetingPointsCount < 3)
+                      TextButton(
+                        onPressed: _addMeetingPoint,
+                        child: Text(
+                          'Add another meeting point',
+                          style: TextStyle(color: Colors.green),
+                        ),
+                      ),
                     SizedBox(height: 20),
+                    Text(
+                      'Please select at least one day:',
+                      style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black),
+                    ),
+                    SizedBox(height: 10),
                     Wrap(
                       spacing: 10,
                       children: daysOfWeek.map((day) {
@@ -208,6 +245,13 @@ class _CreateRidePageState extends State<CreateRidePage> {
                               }
                             });
                           },
+                          backgroundColor: Colors.white,
+                          selectedColor: Colors.green,
+                          labelStyle: TextStyle(
+                            color: selectedDays.contains(day)
+                                ? Colors.white
+                                : Colors.black,
+                          ),
                         );
                       }).toList(),
                     ),
@@ -215,101 +259,20 @@ class _CreateRidePageState extends State<CreateRidePage> {
                     ...selectedDays.map((day) {
                       return Column(
                         children: [
-                          Text("$day"),
+                          Text("$day",
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 16)),
                           buildTimePicker(
                               'Departure time:', departureTimes[day]!),
                           buildTimePicker('Return time:', returnTimes[day]!),
+                          SizedBox(height: 10),
                         ],
                       );
                     }).toList(),
                     SizedBox(height: 20),
-                    ElevatedButton(
+                    CustomButton(
+                      label: 'Create',
                       onPressed: _createRide,
-                      child: Text('Create new group'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        padding:
-                            EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-                        textStyle: TextStyle(fontSize: 18),
-                      ),
-                    ),
-                    SizedBox(height: 20),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.green.shade100,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      padding:
-                          EdgeInsets.symmetric(vertical: 20, horizontal: 40),
-                      margin: EdgeInsets.only(bottom: 20),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: <Widget>[
-                          InkWell(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (context) => MyRidesPage()),
-                              );
-                            },
-                            child: Column(
-                              children: [
-                                Icon(Icons.directions_car,
-                                    size: 50, color: Colors.green),
-                                Text('My rides',
-                                    style: TextStyle(
-                                        fontSize: 16, color: Colors.green)),
-                              ],
-                            ),
-                          ),
-                          InkWell(
-                            // onTap: () {
-                            // Navigator.push(
-                            // context,
-                            // MaterialPageRoute(builder: (context) => NotificationsPage()),
-                            // );
-                            // },
-                            child: Column(
-                              children: [
-                                Icon(Icons.notifications,
-                                    size: 50, color: Colors.green),
-                                Text('Notification',
-                                    style: TextStyle(
-                                        fontSize: 16, color: Colors.green)),
-                              ],
-                            ),
-                          ),
-                          InkWell(
-                            // onTap: () {
-                            // Navigator.push(
-                            // context,
-                            // MaterialPageRoute(builder: (context) => ProfilePage()),
-                            // );
-                            // },
-                            child: Column(
-                              children: [
-                                Icon(Icons.person,
-                                    size: 50, color: Colors.green),
-                                Text('My profile',
-                                    style: TextStyle(
-                                        fontSize: 16, color: Colors.green)),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    SizedBox(height: 20),
-                    IconButton(
-                      icon:
-                          Icon(Icons.arrow_back, color: Colors.green, size: 50),
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => HomePage()),
-                        );
-                      },
                     ),
                     SizedBox(height: 20),
                   ],
@@ -319,59 +282,89 @@ class _CreateRidePageState extends State<CreateRidePage> {
           ),
         ),
       ),
+      bottomNavigationBar: BottomBar(
+        selectedIndex: _selectedIndex,
+        onItemTapped: _onItemTapped,
+      ),
     );
   }
 
   Widget buildTextFieldWithAsterisk(
       String label, TextEditingController controller, bool isRequired) {
-    return Row(
-      children: [
-        Expanded(
-          child: TextFormField(
-            controller: controller,
-            decoration: InputDecoration(
-              labelText: label,
-              border: OutlineInputBorder(),
-              filled: true,
-              fillColor: Colors.white,
-            ),
-            validator: (val) {
-              if (isRequired && (val == null || val.isEmpty)) {
-                return 'This field is required';
-              }
-              return null;
-            },
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: Colors.green, width: 2),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12.0),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: controller,
+                  decoration: InputDecoration(
+                    labelText: label,
+                    border: InputBorder.none,
+                    filled: true,
+                    fillColor: Colors.white,
+                  ),
+                  validator: (val) {
+                    if (isRequired && (val == null || val.isEmpty)) {
+                      return 'This field is required';
+                    }
+                    return null;
+                  },
+                ),
+              ),
+              if (isRequired)
+                Padding(
+                  padding: const EdgeInsets.only(left: 4.0),
+                  child: Text(
+                    '*',
+                    style: TextStyle(color: Colors.red, fontSize: 24),
+                  ),
+                ),
+            ],
           ),
         ),
-        if (isRequired)
-          Padding(
-            padding: const EdgeInsets.only(left: 4.0),
-            child: Text(
-              '*',
-              style: TextStyle(color: Colors.red, fontSize: 24),
-            ),
-          ),
-      ],
+      ),
     );
   }
 
   Widget buildTimePicker(String label, TextEditingController controller) {
-    return Row(
-      children: [
-        Expanded(
-          child: TextFormField(
-            controller: controller,
-            readOnly: true,
-            decoration: InputDecoration(
-              labelText: label,
-              border: OutlineInputBorder(),
-              filled: true,
-              fillColor: Colors.white,
-            ),
-            onTap: () => _selectTime(context, controller),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: Colors.green, width: 2),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12.0),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: controller,
+                  readOnly: true,
+                  decoration: InputDecoration(
+                    labelText: label,
+                    border: InputBorder.none,
+                    filled: true,
+                    fillColor: Colors.white,
+                  ),
+                  onTap: () => _selectTime(context, controller),
+                ),
+              ),
+            ],
           ),
         ),
-      ],
+      ),
     );
   }
 }

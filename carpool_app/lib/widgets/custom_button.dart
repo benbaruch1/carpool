@@ -21,7 +21,7 @@ class CustomButton extends StatelessWidget {
     return GestureDetector(
       onTap: () => onPressed(),
       child: Container(
-        width: 210, // Adjust width of the button
+        width: 190, // Adjust width of the button
         height: 55, // Adjust height of the button
         margin: EdgeInsets.symmetric(vertical: 8.0),
         decoration: BoxDecoration(
@@ -32,7 +32,7 @@ class CustomButton extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Padding(
-              padding: EdgeInsets.only(left: 65), // Adjust padding to move text
+              padding: EdgeInsets.only(left: 50), // Adjust padding to move text
               child: Text(
                 label,
                 style: TextStyle(
