@@ -139,7 +139,7 @@ class _MyRidesPageState extends State<MyRidesPage> {
                                 Icon(Icons.directions_car, color: Colors.green),
                                 SizedBox(width: 5),
                                 Expanded(
-                                  child: Row(
+                                  child: Wrap(
                                     children: _buildRouteIcons(ride),
                                   ),
                                 ),
