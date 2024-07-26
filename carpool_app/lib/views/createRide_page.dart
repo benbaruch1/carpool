@@ -200,34 +200,49 @@ class _CreateRidePageState extends State<CreateRidePage> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: <Widget>[
                     buildTextFieldWithAsterisk(
-                        'Group name:', _rideNameController, true),
+                        'Group name:', _rideNameController, true, Icons.group),
                     SizedBox(height: 20),
                     buildTextFieldWithAsterisk('Set first meeting point:',
-                        _firstMeetingPointController, true),
+                        _firstMeetingPointController, true, Icons.location_on),
                     if (_meetingPointsCount > 1) SizedBox(height: 20),
                     if (_meetingPointsCount > 1)
-                      buildTextFieldWithAsterisk('Set second meeting point:',
-                          _secondMeetingPointController, false),
+                      buildTextFieldWithAsterisk(
+                          'Set second meeting point:',
+                          _secondMeetingPointController,
+                          false,
+                          Icons.location_on),
                     if (_meetingPointsCount > 2) SizedBox(height: 20),
                     if (_meetingPointsCount > 2)
-                      buildTextFieldWithAsterisk('Set third meeting point:',
-                          _thirdMeetingPointController, false),
+                      buildTextFieldWithAsterisk(
+                          'Set third meeting point:',
+                          _thirdMeetingPointController,
+                          false,
+                          Icons.location_on),
                     SizedBox(height: 10),
                     if (_meetingPointsCount < 3)
-                      TextButton(
+                      TextButton.icon(
                         onPressed: _addMeetingPoint,
-                        child: Text(
+                        icon: Icon(Icons.add, color: Colors.green),
+                        label: Text(
                           'Add another meeting point',
                           style: TextStyle(color: Colors.green),
                         ),
                       ),
                     SizedBox(height: 20),
-                    Text(
-                      'Please select at least one day:',
-                      style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black),
+                    Row(
+                      children: [
+                        Text(
+                          'Please select at least one day:',
+                          style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black),
+                        ),
+                        Text(
+                          '*',
+                          style: TextStyle(color: Colors.red, fontSize: 24),
+                        ),
+                      ],
                     ),
                     SizedBox(height: 10),
                     Wrap(
@@ -245,7 +260,11 @@ class _CreateRidePageState extends State<CreateRidePage> {
                               }
                             });
                           },
-                          backgroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            side: BorderSide(color: Colors.green, width: 2),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          backgroundColor: Colors.transparent,
                           selectedColor: Colors.green,
                           labelStyle: TextStyle(
                             color: selectedDays.contains(day)
@@ -289,8 +308,8 @@ class _CreateRidePageState extends State<CreateRidePage> {
     );
   }
 
-  Widget buildTextFieldWithAsterisk(
-      String label, TextEditingController controller, bool isRequired) {
+  Widget buildTextFieldWithAsterisk(String label,
+      TextEditingController controller, bool isRequired, IconData icon) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Container(
@@ -303,6 +322,8 @@ class _CreateRidePageState extends State<CreateRidePage> {
           padding: const EdgeInsets.symmetric(horizontal: 12.0),
           child: Row(
             children: [
+              Icon(icon, color: Colors.green),
+              SizedBox(width: 10),
               Expanded(
                 child: TextFormField(
                   controller: controller,
@@ -348,6 +369,8 @@ class _CreateRidePageState extends State<CreateRidePage> {
           padding: const EdgeInsets.symmetric(horizontal: 12.0),
           child: Row(
             children: [
+              Icon(Icons.access_time, color: Colors.green),
+              SizedBox(width: 10),
               Expanded(
                 child: TextFormField(
                   controller: controller,
