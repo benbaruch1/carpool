@@ -1,7 +1,7 @@
-import 'package:carpool_app/models/group.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:carpool_app/models/group.dart';
 import 'package:carpool_app/views/group_page.dart';
 import 'package:carpool_app/services/database.dart';
 import 'package:carpool_app/widgets/custom_button.dart';
@@ -41,6 +41,18 @@ class _SearchRidePageState extends State<SearchRidePage> {
     });
   }
 
+  void _resetSearchFields() {
+    _userNameController.clear();
+    _meetingPointController.clear();
+    _departureTimeController.clear();
+    _rideNameController.clear();
+    setState(() {
+      selectedDays.clear();
+      _showFullGroups = true;
+      _searchResults = null;
+    });
+  }
+
   void _navigateToGroupPage(BuildContext context, Group group) async {
     String currentUserId = FirebaseAuth.instance.currentUser!.uid;
 
@@ -60,6 +72,12 @@ class _SearchRidePageState extends State<SearchRidePage> {
     setState(() {
       _selectedIndex = index;
     });
+  }
+
+  Future<String> _fetchUserName(String userId) async {
+    DocumentSnapshot userSnapshot =
+        await FirebaseFirestore.instance.collection('users').doc(userId).get();
+    return userSnapshot['firstName'];
   }
 
   @override
@@ -102,6 +120,17 @@ class _SearchRidePageState extends State<SearchRidePage> {
                             }
                           });
                         },
+                        shape: RoundedRectangleBorder(
+                          side: BorderSide(color: Colors.green, width: 2),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        backgroundColor: Colors.transparent,
+                        selectedColor: Colors.green,
+                        labelStyle: TextStyle(
+                          color: selectedDays.contains(day)
+                              ? Colors.white
+                              : Colors.black,
+                        ),
                       );
                     }).toList(),
                   ),
@@ -123,6 +152,16 @@ class _SearchRidePageState extends State<SearchRidePage> {
                         },
                       ),
                       Text('Show full groups (5/5 members)'),
+                      Spacer(),
+                      ElevatedButton(
+                        onPressed: _resetSearchFields,
+                        child: Text('Reset'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Color.fromARGB(255, 76, 244, 54),
+                          padding:
+                              EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        ),
+                      ),
                     ],
                   ),
                   SizedBox(height: 20),
@@ -150,63 +189,136 @@ class _SearchRidePageState extends State<SearchRidePage> {
                                 itemCount: snapshot.data!.length,
                                 itemBuilder: (context, index) {
                                   Group group = snapshot.data![index];
-                                  return Card(
-                                    margin: EdgeInsets.symmetric(
-                                        vertical: 10, horizontal: 15),
-                                    child: ListTile(
-                                      contentPadding: EdgeInsets.all(15),
-                                      title: Text(
-                                        group.rideName,
-                                        style: TextStyle(
-                                            fontSize: 20,
-                                            fontWeight: FontWeight.bold),
-                                      ),
-                                      subtitle: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                              'First Meeting Point: ${group.firstMeetingPoint}'),
-                                          Text(
-                                              'Second Meeting Point: ${group.secondMeetingPoint}'),
-                                          Text(
-                                              'Third Meeting Point: ${group.thirdMeetingPoint}'),
-                                        ],
-                                      ),
-                                      trailing: SingleChildScrollView(
-                                        child: Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Text(
-                                                'Members: ${group.members.length}/5'),
-                                            if (group.members.length < 5)
-                                              TextButton(
-                                                child: Text('JOIN'),
-                                                onPressed: () {
-                                                  _navigateToGroupPage(
-                                                      context, group);
-                                                },
-                                                style: TextButton.styleFrom(
-                                                  padding: EdgeInsets.symmetric(
-                                                      horizontal: 8,
-                                                      vertical: 4),
-                                                ),
+                                  return FutureBuilder<String>(
+                                    future: _fetchUserName(group.userId),
+                                    builder: (context, userSnapshot) {
+                                      if (userSnapshot.connectionState ==
+                                          ConnectionState.waiting) {
+                                        return CircularProgressIndicator();
+                                      } else if (userSnapshot.hasError) {
+                                        return Text(
+                                            'Error: ${userSnapshot.error}');
+                                      } else {
+                                        String userName = userSnapshot.data!;
+                                        return GestureDetector(
+                                          onTap: () {
+                                            _navigateToGroupPage(
+                                                context, group);
+                                          },
+                                          child: Card(
+                                            margin: EdgeInsets.symmetric(
+                                                vertical: 10, horizontal: 15),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(15.0),
+                                              side: BorderSide(
+                                                  color: Colors.green,
+                                                  width: 2),
+                                            ),
+                                            child: Container(
+                                              padding: EdgeInsets.all(15),
+                                              decoration: BoxDecoration(
+                                                color: Color.fromARGB(
+                                                    255, 217, 239, 220),
+                                                borderRadius:
+                                                    BorderRadius.circular(15.0),
                                               ),
-                                            if (group.members.length >= 5)
-                                              Text(
-                                                'FULL',
-                                                style: TextStyle(
-                                                    color: Colors.red,
-                                                    fontWeight:
-                                                        FontWeight.bold),
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    group.rideName,
+                                                    style: TextStyle(
+                                                        fontSize: 18,
+                                                        fontWeight:
+                                                            FontWeight.bold),
+                                                  ),
+                                                  SizedBox(height: 10),
+                                                  Row(
+                                                    children: [
+                                                      Text(group
+                                                          .firstMeetingPoint),
+                                                      if (group
+                                                          .secondMeetingPoint
+                                                          .isNotEmpty)
+                                                        Icon(
+                                                            Icons.arrow_forward,
+                                                            color:
+                                                                Colors.green),
+                                                      if (group
+                                                          .secondMeetingPoint
+                                                          .isNotEmpty)
+                                                        Text(group
+                                                            .secondMeetingPoint),
+                                                      if (group
+                                                          .thirdMeetingPoint
+                                                          .isNotEmpty)
+                                                        Icon(
+                                                            Icons.arrow_forward,
+                                                            color:
+                                                                Colors.green),
+                                                      if (group
+                                                          .thirdMeetingPoint
+                                                          .isNotEmpty)
+                                                        Text(group
+                                                            .thirdMeetingPoint),
+                                                      Icon(Icons.arrow_forward,
+                                                          color: Colors.green),
+                                                      Icon(Icons.flag,
+                                                          color: Colors.green),
+                                                    ],
+                                                  ),
+                                                  SizedBox(height: 10),
+                                                  Text(
+                                                    'Days: ${group.selectedDays.join(', ')}',
+                                                    style:
+                                                        TextStyle(fontSize: 16),
+                                                  ),
+                                                  Divider(
+                                                    color: Colors.green,
+                                                    thickness: 1,
+                                                    indent: 5,
+                                                    endIndent: 5,
+                                                  ),
+                                                  SizedBox(height: 10),
+                                                  Row(
+                                                    children: [
+                                                      Icon(Icons.person,
+                                                          color: Colors.green),
+                                                      SizedBox(width: 5),
+                                                      Text(
+                                                          'Created by $userName'),
+                                                    ],
+                                                  ),
+                                                  SizedBox(height: 10),
+                                                  Row(
+                                                    children: [
+                                                      Icon(Icons.group,
+                                                          color: Colors.green),
+                                                      SizedBox(width: 5),
+                                                      Text(
+                                                          'Members: ${group.members.length}/5'),
+                                                      if (group
+                                                              .members.length >=
+                                                          5)
+                                                        Text(
+                                                          ' (FULL)',
+                                                          style: TextStyle(
+                                                              color: Colors.red,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold),
+                                                        ),
+                                                    ],
+                                                  ),
+                                                ],
                                               ),
-                                          ],
-                                        ),
-                                      ),
-                                      onTap: () {
-                                        _navigateToGroupPage(context, group);
-                                      },
-                                    ),
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                    },
                                   );
                                 },
                               );
