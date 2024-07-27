@@ -110,6 +110,7 @@ class _CreateRidePageState extends State<CreateRidePage> {
           'selectedDays': selectedDays.toList(),
           'times': times,
           'userId': user.uid,
+          'nextDriver': user.uid,
           'members': [
             user.uid
           ], // Add the user who created the group as the first member
