@@ -154,7 +154,7 @@ class _MyRidesPageState extends State<MyRidesPage> {
                                 SizedBox(width: 5),
                                 Expanded(
                                   child: FutureBuilder<String>(
-                                    future: _fetchUserName(ride['userId']),
+                                    future: _fetchUserName(ride['nextDriver']),
                                     builder: (context, snapshot) {
                                       if (snapshot.connectionState ==
                                           ConnectionState.waiting) {

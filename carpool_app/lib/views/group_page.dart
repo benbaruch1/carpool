@@ -689,7 +689,7 @@ class _GroupPageState extends State<GroupPage> {
   }
 
   Widget _buildStartDriveButton(BuildContext context) {
-    return ElevatedButton(
+    return SmallCustomButton(
       onPressed: () async {
         await FirebaseFirestore.instance
             .collection('groups')
@@ -712,7 +712,7 @@ class _GroupPageState extends State<GroupPage> {
 
         _showRouteDialog(context);
       },
-      child: Text('Start Drive'),
+      label: 'Start Drive',
     );
   }
 
@@ -722,7 +722,7 @@ class _GroupPageState extends State<GroupPage> {
       return SizedBox
           .shrink(); // Return an empty widget if the user is not the driver
     }
-    return ElevatedButton(
+    return SmallCustomButton(
       onPressed: () async {
         await FirebaseFirestore.instance
             .collection('groups')
@@ -744,7 +744,8 @@ class _GroupPageState extends State<GroupPage> {
         await notifyGroupAboutRideStart(widget.group, widget.currentUserId);
         setState(() {});
       },
-      child: Text('End Drive'),
+      label: 'End Drive',
+      color: Colors.red,
     );
   }
 
