@@ -158,7 +158,7 @@ class _MyRidesPageState extends State<MyRidesPage> {
                                     builder: (context, snapshot) {
                                       if (snapshot.connectionState ==
                                           ConnectionState.waiting) {
-                                        return CircularProgressIndicator();
+                                        return LinearProgressIndicator();
                                       } else if (snapshot.hasError) {
                                         return Text('Error');
                                       } else {
