@@ -402,12 +402,15 @@ class _GroupPageState extends State<GroupPage> {
                                 userData['firstName'] ?? 'Unknown';
                             return InkWell(
                               onTap: () => _showDriverDetails(context, member),
-                              child: Text(
-                                memberName,
-                                style: TextStyle(
-                                  color:
-                                      isCreator ? Colors.green : Colors.black,
-                                  decoration: TextDecoration.underline,
+                              child: Padding(
+                                padding: const EdgeInsets.only(left: 4.0),
+                                child: Text(
+                                  memberName,
+                                  style: TextStyle(
+                                    color:
+                                        isCreator ? Colors.green : Colors.black,
+                                    decoration: TextDecoration.underline,
+                                  ),
                                 ),
                               ),
                             );
@@ -416,12 +419,15 @@ class _GroupPageState extends State<GroupPage> {
                       ),
                     ),
                     Expanded(
-                      child: Text(
-                        points.toString(),
-                        style: TextStyle(
-                          color: isCreator ? Colors.green : Colors.black,
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 10),
+                        child: Text(
+                          points.toString(),
+                          style: TextStyle(
+                            color: isCreator ? Colors.green : Colors.black,
+                          ),
+                          textAlign: TextAlign.right,
                         ),
-                        textAlign: TextAlign.right,
                       ),
                     ),
                   ],
