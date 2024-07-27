@@ -14,6 +14,7 @@ import 'package:geocoding/geocoding.dart';
 import 'package:carpool_app/widgets/top_bar.dart';
 import 'package:carpool_app/widgets/bottom_bar.dart';
 import 'package:carpool_app/widgets/custom_button.dart';
+import 'package:carpool_app/widgets/small_custom_button.dart';
 
 class GroupPage extends StatefulWidget {
   final Group group;
@@ -206,7 +207,7 @@ class _GroupPageState extends State<GroupPage> {
               Padding(
                 padding: const EdgeInsets.all(10.0),
                 child: CustomButton(
-                  label: 'Leave Group',
+                  label: 'Leave',
                   color: Colors.red,
                   onPressed: () async {
                     await _leaveGroup(context);
@@ -217,7 +218,7 @@ class _GroupPageState extends State<GroupPage> {
               Padding(
                 padding: const EdgeInsets.all(14.0),
                 child: CustomButton(
-                  label: 'Join Group',
+                  label: 'Join',
                   color: Colors.green,
                   onPressed: () async {
                     await _joinGroup(context);

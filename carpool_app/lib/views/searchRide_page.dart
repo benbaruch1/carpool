@@ -235,7 +235,7 @@ class _SearchRidePageState extends State<SearchRidePage> {
                                                             FontWeight.bold),
                                                   ),
                                                   SizedBox(height: 10),
-                                                  Row(
+                                                  Wrap(
                                                     children: [
                                                       Text(group
                                                           .firstMeetingPoint),
