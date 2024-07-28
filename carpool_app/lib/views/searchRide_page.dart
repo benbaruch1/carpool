@@ -34,6 +34,7 @@ class _SearchRidePageState extends State<SearchRidePage> {
       selectedDays: selectedDays,
       userId: _userNameController.text,
       rideName: _rideNameController.text,
+      showFullGroups: _showFullGroups,
     );
 
     setState(() {
@@ -118,6 +119,7 @@ class _SearchRidePageState extends State<SearchRidePage> {
                             } else {
                               selectedDays.remove(day);
                             }
+                            ;
                           });
                         },
                         shape: RoundedRectangleBorder(

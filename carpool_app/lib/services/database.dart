@@ -60,109 +60,68 @@ class DatabaseService {
     String? returnTime,
     String? rideName,
     String? userId,
+    bool showFullGroups = true,
   }) async {
-    List<Group> results = [];
+    Query query = FirebaseFirestore.instance.collection('groups');
 
-    // If all search parameters are empty or null, return all groups
-    if ((meetingPoint == null || meetingPoint.isEmpty) &&
-        (selectedDays == null || selectedDays.isEmpty) &&
-        (departureTime == null || departureTime.isEmpty) &&
-        (returnTime == null || returnTime.isEmpty) &&
-        (rideName == null || rideName.isEmpty) &&
-        (userId == null || userId.isEmpty)) {
-      QuerySnapshot snapshot =
-          await FirebaseFirestore.instance.collection('groups').get();
-      return snapshot.docs.map((doc) {
-        return Group.fromMap(doc.data() as Map<String, dynamic>, doc.id);
-      }).toList();
-    }
-
-    // Helper function to fetch groups by meeting point
-    Future<void> fetchGroupsByMeetingPoint(String field, String value) async {
-      Query query = FirebaseFirestore.instance
-          .collection('groups')
-          .where(field, isEqualTo: value);
-      QuerySnapshot querySnapshot = await query.get();
-      results.addAll(querySnapshot.docs.map((doc) {
-        return Group.fromMap(doc.data() as Map<String, dynamic>, doc.id);
-      }));
-    }
-
-    // Fetch groups by meeting point if provided
-    if (meetingPoint != null && meetingPoint.isNotEmpty) {
-      await fetchGroupsByMeetingPoint('firstMeetingPoint', meetingPoint);
-      await fetchGroupsByMeetingPoint('secondMeetingPoint', meetingPoint);
-      await fetchGroupsByMeetingPoint('thirdMeetingPoint', meetingPoint);
-    }
-
-    // Additional filters for selectedDays, rideName, userId
+    // Apply filters to the query
     if (selectedDays != null && selectedDays.isNotEmpty) {
-      for (String day in selectedDays) {
-        Query dayQuery = FirebaseFirestore.instance
-            .collection('groups')
-            .where('selectedDays', arrayContains: day);
-        QuerySnapshot daySnapshot = await dayQuery.get();
-        results.addAll(daySnapshot.docs.map((doc) {
-          return Group.fromMap(doc.data() as Map<String, dynamic>, doc.id);
-        }));
-      }
+      query = query.where('selectedDays', arrayContainsAny: selectedDays);
+    }
+
+    // Fetch the filtered groups
+    QuerySnapshot snapshot = await query.get();
+    List<Group> results = snapshot.docs.map((doc) {
+      return Group.fromMap(doc.data() as Map<String, dynamic>, doc.id);
+    }).toList();
+
+    // Filter out full groups if showFullGroups is false
+    if (!showFullGroups) {
+      results = results.where((group) => group.members.length < 5).toList();
+    }
+
+    // Apply additional filters
+    if (meetingPoint != null && meetingPoint.isNotEmpty) {
+      results = results.where((group) {
+        return group.firstMeetingPoint
+                .toLowerCase()
+                .contains(meetingPoint.toLowerCase()) ||
+            group.secondMeetingPoint
+                .toLowerCase()
+                .contains(meetingPoint.toLowerCase()) ||
+            group.thirdMeetingPoint
+                .toLowerCase()
+                .contains(meetingPoint.toLowerCase());
+      }).toList();
     }
 
     if (rideName != null && rideName.isNotEmpty) {
-      Query rideQuery = FirebaseFirestore.instance
-          .collection('groups')
-          .where('rideName', isEqualTo: rideName);
-      QuerySnapshot rideSnapshot = await rideQuery.get();
-      results.addAll(rideSnapshot.docs.map((doc) {
-        return Group.fromMap(doc.data() as Map<String, dynamic>, doc.id);
-      }));
-    }
-
-    // Fetch user IDs by user name
-    List<String> userIds = [];
-    if (userId != null && userId.isNotEmpty) {
-      Query userQuery = FirebaseFirestore.instance
-          .collection('users')
-          .where('firstName', isEqualTo: userId);
-      QuerySnapshot userSnapshot = await userQuery.get();
-      userIds = userSnapshot.docs.map((doc) => doc.id).toList();
-    }
-
-    // Fetch groups by user IDs if userName is provided
-    if (userIds.isNotEmpty) {
-      for (String userId in userIds) {
-        Query userGroupQuery = FirebaseFirestore.instance
-            .collection('groups')
-            .where('userId', isEqualTo: userId);
-        QuerySnapshot userGroupSnapshot = await userGroupQuery.get();
-        results.addAll(userGroupSnapshot.docs.map((doc) {
-          return Group.fromMap(doc.data() as Map<String, dynamic>, doc.id);
-        }));
-      }
-    }
-
-    // Fetch all groups for departureTime filtering
-    if (departureTime != null && departureTime.isNotEmpty) {
-      Query query = FirebaseFirestore.instance.collection('groups');
-      QuerySnapshot snapshot = await query.get();
-      List<Group> allGroups = snapshot.docs.map((doc) {
-        return Group.fromMap(doc.data() as Map<String, dynamic>, doc.id);
+      results = results.where((group) {
+        return group.rideName.toLowerCase().contains(rideName.toLowerCase());
       }).toList();
+    }
 
+    if (userId != null && userId.isNotEmpty) {
+      QuerySnapshot userSnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .where('firstName', isEqualTo: userId)
+          .get();
+      List<String> userIds = userSnapshot.docs.map((doc) => doc.id).toList();
+      results =
+          results.where((group) => userIds.contains(group.userId)).toList();
+    }
+
+    if (departureTime != null && departureTime.isNotEmpty) {
       int desiredTimeInMinutes = convertTimeToMinutes(departureTime);
-
-      results.addAll(allGroups.where((group) {
+      results = results.where((group) {
         return group.times.values.any((time) {
           int groupTimeInMinutes = convertTimeToMinutes(time['departureTime']);
           return (groupTimeInMinutes - desiredTimeInMinutes).abs() <= 30;
         });
-      }).toList());
+      }).toList();
     }
 
-    // Remove duplicates if necessary
-    final uniqueResults = removeDuplicateGroups(results);
-
-    return uniqueResults;
+    return results;
   }
 }
 
