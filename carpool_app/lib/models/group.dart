@@ -25,7 +25,7 @@ class Group {
 
   factory Group.fromMap(Map<String, dynamic> data, String id) {
     return Group(
-      uid: id, // Add this field
+      uid: id,
       firstMeetingPoint: data['firstMeetingPoint'],
       secondMeetingPoint: data['secondMeetingPoint'],
       thirdMeetingPoint: data['thirdMeetingPoint'],

@@ -102,11 +102,16 @@ class DatabaseService {
     }
 
     if (userId != null && userId.isNotEmpty) {
-      QuerySnapshot userSnapshot = await FirebaseFirestore.instance
-          .collection('users')
-          .where('firstName', isEqualTo: userId)
-          .get();
-      List<String> userIds = userSnapshot.docs.map((doc) => doc.id).toList();
+      QuerySnapshot userSnapshot =
+          await FirebaseFirestore.instance.collection('users').get();
+      List<String> userIds = userSnapshot.docs
+          .where((doc) {
+            String firstName = doc['firstName'].toString().toLowerCase();
+            return firstName.contains(userId.toLowerCase());
+          })
+          .map((doc) => doc.id)
+          .toList();
+
       results =
           results.where((group) => userIds.contains(group.userId)).toList();
     }
