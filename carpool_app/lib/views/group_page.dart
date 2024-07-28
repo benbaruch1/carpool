@@ -61,15 +61,20 @@ class _GroupPageState extends State<GroupPage> {
                 title: widget.group.rideName,
                 showBackButton: true,
               ),
-              TabBar(
-                tabs: [
-                  Tab(text: "Details"),
-                  Tab(text: "Map"),
-                ],
+              Container(
+                color: Colors.grey[200],
+                child: TabBar(
+                  indicatorColor: Colors.green,
+                  labelStyle: TextStyle(fontSize: 18.0, color: Colors.green),
+                  tabs: [
+                    Tab(text: "Details"),
+                    Tab(text: "Map"),
+                  ],
+                ),
               ),
             ],
           ),
-        ), // Use the custom AppBar with TopBar and TabBar
+        ),
         body: TabBarView(
           children: [
             // First tab: Details
