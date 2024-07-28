@@ -2,6 +2,7 @@ import 'package:carpool_app/services/firebase_auth_service.dart';
 import 'package:carpool_app/shared/loading.dart';
 import 'package:carpool_app/views/home_page.dart';
 import 'package:carpool_app/views/home_wrapper.dart';
+import 'package:carpool_app/widgets/custom_button.dart';
 import 'package:flutter/material.dart';
 
 class RegisterPage extends StatefulWidget {
@@ -28,7 +29,10 @@ class _RegisterPageState extends State<RegisterPage> {
             body: Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Colors.green.shade200, Colors.white],
+                  colors: [
+                    const Color.fromARGB(0, 165, 214, 167),
+                    Colors.white
+                  ],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                 ),
@@ -53,85 +57,29 @@ class _RegisterPageState extends State<RegisterPage> {
                             'Match, Drive, Share',
                             style: TextStyle(fontSize: 18, color: Colors.black),
                           ),
-                          SizedBox(height: 50),
-                          Text(
-                            'Register',
-                            style: TextStyle(fontSize: 16, color: Colors.black),
-                          ),
-                          SizedBox(height: 40),
-                          TextFormField(
-                            onChanged: (val) {
-                              email = val;
-                            },
-                            decoration: InputDecoration(
-                              labelText: 'Email',
-                              border: OutlineInputBorder(),
-                              filled: true,
-                              fillColor: Colors.white,
-                            ),
-                            validator: (val) =>
-                                val!.isEmpty ? 'Enter an email' : null,
-                          ),
-                          SizedBox(height: 40),
-                          TextFormField(
-                            onChanged: (val) {
-                              firstName = val;
-                            },
-                            decoration: InputDecoration(
-                              labelText: 'First name',
-                              border: OutlineInputBorder(),
-                              filled: true,
-                              fillColor: Colors.white,
-                            ),
-                            validator: (val) =>
-                                val!.isEmpty ? 'Enter your first name' : null,
-                          ),
-                          SizedBox(height: 40),
-                          TextFormField(
-                            onChanged: (val) {
-                              phoneNumber = val;
-                            },
-                            decoration: InputDecoration(
-                              labelText: 'Phone number',
-                              border: OutlineInputBorder(),
-                              filled: true,
-                              fillColor: Colors.white,
-                            ),
-                            validator: (val) =>
-                                val!.isEmpty ? 'Enter your phone number' : null,
-                          ),
-                          SizedBox(height: 40),
-                          TextFormField(
-                            onChanged: (val) {
-                              address = val;
-                            },
-                            decoration: InputDecoration(
-                              labelText: 'Address',
-                              border: OutlineInputBorder(),
-                              filled: true,
-                              fillColor: Colors.white,
-                            ),
-                            validator: (val) =>
-                                val!.isEmpty ? 'Enter your address' : null,
-                          ),
                           SizedBox(height: 20),
-                          TextFormField(
-                            onChanged: (val) {
-                              password = val;
-                            },
-                            decoration: InputDecoration(
-                              labelText: 'Password',
-                              border: OutlineInputBorder(),
-                              filled: true,
-                              fillColor: Colors.white,
-                            ),
-                            obscureText: true,
-                            validator: (val) => val!.length < 6
-                                ? 'Enter a password 6+ chars long'
-                                : null,
-                          ),
+                          buildTextField('Email', (val) {
+                            email = val;
+                          }, 'Enter an email', false),
                           SizedBox(height: 20),
-                          ElevatedButton(
+                          buildTextField('First name', (val) {
+                            firstName = val;
+                          }, 'Enter your first name', false),
+                          SizedBox(height: 20),
+                          buildTextField('Phone number', (val) {
+                            phoneNumber = val;
+                          }, 'Enter your phone number', false),
+                          SizedBox(height: 20),
+                          buildTextField('Address', (val) {
+                            address = val;
+                          }, 'Enter your address', false),
+                          SizedBox(height: 20),
+                          buildTextField('Password', (val) {
+                            password = val;
+                          }, 'Enter a password 6+ chars long', true),
+                          SizedBox(height: 20),
+                          CustomButton(
+                            label: 'Register',
                             onPressed: () async {
                               if (_formKey.currentState!.validate()) {
                                 setState(() => loading = true);
@@ -150,7 +98,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                   });
                                 } else {
                                   print(
-                                      "[LOG] New user registered succesffully ${email}");
+                                      "[LOG] New user registered successfully ${email}");
                                   Navigator.of(context).pushAndRemoveUntil(
                                     MaterialPageRoute(
                                         builder: (context) => HomePage()),
@@ -159,18 +107,10 @@ class _RegisterPageState extends State<RegisterPage> {
                                 }
                               }
                             },
-                            child: Text('Register'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.green,
-                              padding: EdgeInsets.symmetric(
-                                  horizontal: 40, vertical: 15),
-                              textStyle: TextStyle(fontSize: 18),
-                            ),
                           ),
                           SizedBox(height: 10),
                           TextButton(
                             onPressed: () {
-                              // Use Navigator.push to navigate to RegisterPage
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
@@ -198,5 +138,31 @@ class _RegisterPageState extends State<RegisterPage> {
               ),
             ),
           );
+  }
+
+  Widget buildTextField(String label, Function(String) onChanged,
+      String validatorText, bool obscureText) {
+    return TextFormField(
+      onChanged: onChanged,
+      decoration: InputDecoration(
+        labelText: label,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: Colors.green),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: Colors.green),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: Colors.green),
+        ),
+        filled: true,
+        fillColor: Colors.white,
+      ),
+      obscureText: obscureText,
+      validator: (val) => val!.isEmpty ? validatorText : null,
+    );
   }
 }

@@ -1,5 +1,6 @@
 import 'package:carpool_app/services/firebase_auth_service.dart';
 import 'package:carpool_app/views/register_page.dart';
+import 'package:carpool_app/widgets/custom_button.dart';
 import 'package:flutter/material.dart';
 import 'package:carpool_app/shared/loading.dart';
 
@@ -24,7 +25,10 @@ class _LoginPageState extends State<LoginPage> {
             body: Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Colors.green.shade200, Colors.white],
+                  colors: [
+                    const Color.fromARGB(0, 165, 214, 167),
+                    Colors.white
+                  ],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                 ),
@@ -49,38 +53,17 @@ class _LoginPageState extends State<LoginPage> {
                             'Match, Drive, Share',
                             style: TextStyle(fontSize: 18, color: Colors.black),
                           ),
-                          SizedBox(height: 40),
-                          TextFormField(
-                            onChanged: (val) {
-                              email = val;
-                            },
-                            decoration: InputDecoration(
-                              labelText: 'Email',
-                              border: OutlineInputBorder(),
-                              filled: true,
-                              fillColor: Colors.white,
-                            ),
-                            validator: (val) =>
-                                val!.isEmpty ? 'Enter an email' : null,
-                          ),
                           SizedBox(height: 20),
-                          TextFormField(
-                            onChanged: (val) {
-                              password = val;
-                            },
-                            decoration: InputDecoration(
-                              labelText: 'Password',
-                              border: OutlineInputBorder(),
-                              filled: true,
-                              fillColor: Colors.white,
-                            ),
-                            obscureText: true,
-                            validator: (val) => val!.length < 6
-                                ? 'Enter a password 6+ chars long'
-                                : null,
-                          ),
+                          buildTextField('Email', (val) {
+                            email = val;
+                          }, 'Enter an email', false),
                           SizedBox(height: 20),
-                          ElevatedButton(
+                          buildTextField('Password', (val) {
+                            password = val;
+                          }, 'Enter a password 6+ chars long', true),
+                          SizedBox(height: 20),
+                          CustomButton(
+                            label: 'Sign in',
                             onPressed: () async {
                               if (_formKey.currentState!.validate()) {
                                 setState(() => loading = true);
@@ -96,18 +79,10 @@ class _LoginPageState extends State<LoginPage> {
                                 }
                               }
                             },
-                            child: Text('Sign in'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.green,
-                              padding: EdgeInsets.symmetric(
-                                  horizontal: 40, vertical: 15),
-                              textStyle: TextStyle(fontSize: 18),
-                            ),
                           ),
                           SizedBox(height: 10),
                           TextButton(
                             onPressed: () {
-                              // Use Navigator.push to navigate to RegisterPage
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
@@ -121,7 +96,7 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                           SizedBox(height: 30),
                           Image.asset(
-                            'assets/car_image.png', // Ensure the image asset is correctly referenced
+                            'assets/car_image.png',
                             height: 200,
                           ),
                           SizedBox(
@@ -139,5 +114,31 @@ class _LoginPageState extends State<LoginPage> {
               ),
             ),
           );
+  }
+
+  Widget buildTextField(String label, Function(String) onChanged,
+      String validatorText, bool obscureText) {
+    return TextFormField(
+      onChanged: onChanged,
+      decoration: InputDecoration(
+        labelText: label,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: Colors.green),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: Colors.green),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: Colors.green),
+        ),
+        filled: true,
+        fillColor: Colors.white,
+      ),
+      obscureText: obscureText,
+      validator: (val) => val!.isEmpty ? validatorText : null,
+    );
   }
 }
