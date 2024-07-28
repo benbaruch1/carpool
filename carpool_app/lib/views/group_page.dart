@@ -716,6 +716,10 @@ class _GroupPageState extends State<GroupPage> {
                     '${driverData['firstName']} is the next driver',
                     style: TextStyle(fontSize: 18.0),
                   ),
+                  IconButton(
+                    icon: Icon(Icons.info),
+                    onPressed: _showRouteDialog,
+                  ), // Add this IconButton
                 ],
               ),
             ],
