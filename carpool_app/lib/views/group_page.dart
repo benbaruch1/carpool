@@ -716,7 +716,7 @@ class _GroupPageState extends State<GroupPage> {
           isDriverOnTheWay = true;
         });
 
-        _showRouteDialog(context);
+        await _showRouteDialog();
       },
       label: 'Start Drive',
     );
@@ -859,7 +859,49 @@ class _GroupPageState extends State<GroupPage> {
     return groupData['status'] == 'started';
   }
 
-  Future<void> _showRouteDialog(BuildContext context) async {
+  Future<void> _showRouteDialog() async {
+    // Route dialog
+    List<String> addresses = [
+      widget.group.firstMeetingPoint,
+      if (widget.group.secondMeetingPoint.isNotEmpty)
+        widget.group.secondMeetingPoint,
+      if (widget.group.thirdMeetingPoint.isNotEmpty)
+        widget.group.thirdMeetingPoint,
+    ];
+
+    Map<String, List<Map<String, String>>> details = {};
+    addresses.forEach((address) {
+      details[address] = [];
+    });
+
+    DocumentSnapshot groupSnapshot = await FirebaseFirestore.instance
+        .collection('groups')
+        .doc(widget.group.uid)
+        .get();
+    Map<String, dynamic> groupData =
+        groupSnapshot.data() as Map<String, dynamic>;
+
+    Map<String, dynamic> pickupPoints = groupData['pickupPoints'] ?? {};
+    for (var entry in pickupPoints.entries) {
+      String userId = entry.key;
+      String pickupPoint = entry.value;
+
+      DocumentSnapshot userSnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .get();
+      Map<String, dynamic> userData =
+          userSnapshot.data() as Map<String, dynamic>;
+      String userName = userData['firstName'];
+      String phoneNumber = userData['phoneNumber'];
+
+      if (details.containsKey(pickupPoint)) {
+        details[pickupPoint]!.add({'name': userName, 'phone': phoneNumber});
+      }
+    }
+
+    if (!mounted) return;
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -871,18 +913,20 @@ class _GroupPageState extends State<GroupPage> {
               Text("Route", style: TextStyle(color: Colors.green)),
             ],
           ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              _buildStyledMeetingPoint(
-                  'First Meeting Point', widget.group.firstMeetingPoint),
-              SizedBox(height: 10),
-              _buildStyledMeetingPoint(
-                  'Second Meeting Point', widget.group.secondMeetingPoint),
-              SizedBox(height: 10),
-              _buildStyledMeetingPoint(
-                  'Third Meeting Point', widget.group.thirdMeetingPoint),
-            ],
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                _buildStyledMeetingPoint('First Meeting Point',
+                    widget.group.firstMeetingPoint, details),
+                Divider(color: Colors.green, thickness: 2),
+                _buildStyledMeetingPoint('Second Meeting Point',
+                    widget.group.secondMeetingPoint, details),
+                Divider(color: Colors.green, thickness: 2),
+                _buildStyledMeetingPoint('Third Meeting Point',
+                    widget.group.thirdMeetingPoint, details),
+              ],
+            ),
           ),
           actions: <Widget>[
             TextButton(
@@ -900,184 +944,218 @@ class _GroupPageState extends State<GroupPage> {
     );
   }
 
-  Widget _buildStyledMeetingPoint(String title, String point) {
-    return Row(
+  Widget _buildStyledMeetingPoint(String title, String point,
+      Map<String, List<Map<String, String>>> details) {
+    List<Map<String, String>> users = details[point] ?? [];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(Icons.location_on, color: Colors.red),
-        SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        Container(
+          padding: EdgeInsets.all(8.0),
+          decoration: BoxDecoration(
+            color: Colors.green.shade100,
+            border: Border.all(color: Colors.green, width: 2.0),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Row(
             children: [
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                ),
-              ),
-              Text(
-                point,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[700],
+              Icon(Icons.location_on, color: Colors.red),
+              SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green.shade700,
+                      ),
+                    ),
+                    Text(
+                      point,
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey[800],
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
         ),
+        SizedBox(height: 10),
+        ...users.map((user) => ListTile(
+              leading: Icon(Icons.person, color: Colors.blue),
+              title: Text(
+                user['name']!,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.black,
+                ),
+              ),
+              trailing: IconButton(
+                icon: Icon(Icons.call, color: Colors.green),
+                onPressed: () => _makePhoneCall(user['phone']!),
+              ),
+            )),
       ],
     );
   }
-}
 
-Future<void> _showDriverDetails(BuildContext context, String driverId) async {
-  DocumentSnapshot driverSnapshot =
-      await FirebaseFirestore.instance.collection('users').doc(driverId).get();
+  Future<void> _showDriverDetails(BuildContext context, String driverId) async {
+    DocumentSnapshot driverSnapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(driverId)
+        .get();
 
-  if (driverSnapshot.exists) {
-    Map<String, dynamic> driverData =
-        driverSnapshot.data() as Map<String, dynamic>;
+    if (driverSnapshot.exists) {
+      Map<String, dynamic> driverData =
+          driverSnapshot.data() as Map<String, dynamic>;
 
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Row(
-            children: [
-              Icon(Icons.person, color: Colors.blue),
-              SizedBox(width: 8),
-              Text('${driverData['firstName']}\'s Details'),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: Icon(Icons.phone, color: Colors.green),
-                title: Text('Phone Number'),
-                subtitle: Text(driverData['phoneNumber'] ?? 'N/A'),
-                onTap: () {
-                  _makePhoneCall(driverData['phoneNumber']);
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Row(
+              children: [
+                Icon(Icons.person, color: Colors.blue),
+                SizedBox(width: 8),
+                Text('${driverData['firstName']}\'s Details'),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  leading: Icon(Icons.phone, color: Colors.green),
+                  title: Text('Phone Number'),
+                  subtitle: Text(driverData['phoneNumber'] ?? 'N/A'),
+                  onTap: () {
+                    _makePhoneCall(driverData['phoneNumber']);
+                  },
+                ),
+              ],
+            ),
+            actions: <Widget>[
+              TextButton(
+                child: Text("Close", style: TextStyle(color: Colors.green)),
+                onPressed: () {
+                  Navigator.of(context).pop();
                 },
               ),
             ],
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: Text("Close", style: TextStyle(color: Colors.green)),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(10)),
             ),
-          ],
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(10)),
-          ),
-        );
-      },
-    );
+          );
+        },
+      );
+    }
   }
-}
 
-Future<void> _makePhoneCall(String phoneNumber) async {
-  final Uri launchUri = Uri(
-    scheme: 'tel',
-    path: phoneNumber,
-  );
-  await launch(launchUri.toString());
-}
+  Future<void> _makePhoneCall(String phoneNumber) async {
+    final Uri launchUri = Uri(
+      scheme: 'tel',
+      path: phoneNumber,
+    );
+    await launch(launchUri.toString());
+  }
 
-Future<void> notifyGroupAboutRideStart(
-    Group group, String currentUserId) async {
-  // Filter out the current driver from the user IDs
-  List<String> userIds =
-      group.members.where((userId) => userId != currentUserId).toList();
-
-  await sendNotificationToGroupMembers(
-    title: 'The ride ' + group.rideName + ' has started!',
-    body: 'Your ride to ' +
-        group.rideName +
-        ' has just started. Please be ready at the meeting point.',
-    userIds: userIds,
-  );
-}
-
-Future<void> notifyGroupForNewUserJoin(
-    Group group, String currentUserId) async {
-  DocumentSnapshot userSnapshot = await FirebaseFirestore.instance
-      .collection('users')
-      .doc(currentUserId)
-      .get();
-  if (userSnapshot.exists) {
-    Map<String, dynamic> userData = userSnapshot.data() as Map<String, dynamic>;
-    String newUserName = userData['firstName'] ?? 'User';
-
+  Future<void> notifyGroupAboutRideStart(
+      Group group, String currentUserId) async {
     // Filter out the current driver from the user IDs
     List<String> userIds =
         group.members.where((userId) => userId != currentUserId).toList();
+
     await sendNotificationToGroupMembers(
-      title: "New user join to " + group.rideName + " ride",
-      body: "Welcome " + newUserName + " to the ride.",
+      title: 'The ride ' + group.rideName + ' has started!',
+      body: 'Your ride to ' +
+          group.rideName +
+          ' has just started. Please be ready at the meeting point.',
       userIds: userIds,
     );
   }
-}
 
-Future<List<LatLng>> getLatLngFromAddresses(List<String> addresses) async {
-  List<LatLng> latLngList = [];
-  for (String address in addresses) {
-    try {
-      List<Location> locations = await locationFromAddress(address);
-      if (locations.isNotEmpty) {
-        latLngList.add(LatLng(locations[0].latitude, locations[0].longitude));
-      }
-    } catch (e) {
-      // if it is not recognized, try with Israel suffix
-      String newAddress = address + ", Israel";
+  Future<void> notifyGroupForNewUserJoin(
+      Group group, String currentUserId) async {
+    DocumentSnapshot userSnapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(currentUserId)
+        .get();
+    if (userSnapshot.exists) {
+      Map<String, dynamic> userData =
+          userSnapshot.data() as Map<String, dynamic>;
+      String newUserName = userData['firstName'] ?? 'User';
+
+      // Filter out the current driver from the user IDs
+      List<String> userIds =
+          group.members.where((userId) => userId != currentUserId).toList();
+      await sendNotificationToGroupMembers(
+        title: "New user join to " + group.rideName + " ride",
+        body: "Welcome " + newUserName + " to the ride.",
+        userIds: userIds,
+      );
+    }
+  }
+
+  Future<List<LatLng>> getLatLngFromAddresses(List<String> addresses) async {
+    List<LatLng> latLngList = [];
+    for (String address in addresses) {
       try {
-        List<Location> locations = await locationFromAddress(newAddress);
+        List<Location> locations = await locationFromAddress(address);
         if (locations.isNotEmpty) {
           latLngList.add(LatLng(locations[0].latitude, locations[0].longitude));
         }
       } catch (e) {
-        print('Failed to get location for address: $address. Error: $e');
+        // if it is not recognized, try with Israel suffix
+        String newAddress = address + ", Israel";
+        try {
+          List<Location> locations = await locationFromAddress(newAddress);
+          if (locations.isNotEmpty) {
+            latLngList
+                .add(LatLng(locations[0].latitude, locations[0].longitude));
+          }
+        } catch (e) {
+          print('Failed to get location for address: $address. Error: $e');
+        }
       }
     }
+    return latLngList;
   }
-  return latLngList;
-}
 
-FutureBuilder<List<LatLng>> buildMarkerLayer(List<String> addresses) {
-  return FutureBuilder<List<LatLng>>(
-    future: getLatLngFromAddresses(addresses),
-    builder: (context, snapshot) {
-      if (snapshot.connectionState == ConnectionState.waiting) {
-        return Center(child: CircularProgressIndicator());
-      } else if (snapshot.hasError) {
-        return Center(child: Text('Error: ${snapshot.error}'));
-      } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-        return Center(child: Text('No locations found'));
-      }
+  FutureBuilder<List<LatLng>> buildMarkerLayer(List<String> addresses) {
+    return FutureBuilder<List<LatLng>>(
+      future: getLatLngFromAddresses(addresses),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        } else if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return Center(child: Text('No locations found'));
+        }
 
-      List<LatLng> latLngList = snapshot.data!;
-      latLngList.add(Constants.destination); // braude latlng
+        List<LatLng> latLngList = snapshot.data!;
+        latLngList.add(Constants.destination); // braude latlng
 
-      return MarkerLayer(
-        markers: latLngList.map((latLng) {
-          return Marker(
-            width: 80.0,
-            height: 80.0,
-            point: latLng,
-            child: Icon(
-              Icons.location_pin,
-              color: Colors.red,
-              size: 20.0,
-            ),
-          );
-        }).toList(),
-      );
-    },
-  );
+        return MarkerLayer(
+          markers: latLngList.map((latLng) {
+            return Marker(
+              width: 80.0,
+              height: 80.0,
+              point: latLng,
+              child: Icon(
+                Icons.location_pin,
+                color: Colors.red,
+                size: 20.0,
+              ),
+            );
+          }).toList(),
+        );
+      },
+    );
+  }
 }

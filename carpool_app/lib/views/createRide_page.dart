@@ -67,7 +67,6 @@ class _CreateRidePageState extends State<CreateRidePage> {
         return;
       }
 
-      // Check if user inserted departure & return time for each selected day
       bool allTimesValid = true;
       selectedDays.forEach((day) {
         if (departureTimes[day]!.text.isEmpty ||
@@ -100,6 +99,45 @@ class _CreateRidePageState extends State<CreateRidePage> {
         );
         return;
       }
+
+      List<String> pickupPoints = [
+        _firstMeetingPointController.text,
+        if (_secondMeetingPointController.text.isNotEmpty)
+          _secondMeetingPointController.text,
+        if (_thirdMeetingPointController.text.isNotEmpty)
+          _thirdMeetingPointController.text,
+      ];
+
+      String selectedPickupPoint = await showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text('Select Pickup Point'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: pickupPoints.map((point) {
+                return ListTile(
+                  title: Text(point),
+                  onTap: () {
+                    Navigator.of(context).pop(point);
+                  },
+                );
+              }).toList(),
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(10)),
+            ),
+          );
+        },
+      );
+
+      if (selectedPickupPoint == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Please select a pickup point')),
+        );
+        return;
+      }
+
       try {
         DocumentReference groupRef =
             await FirebaseFirestore.instance.collection('groups').add({
@@ -111,13 +149,11 @@ class _CreateRidePageState extends State<CreateRidePage> {
           'times': times,
           'userId': user.uid,
           'nextDriver': user.uid,
-          'members': [
-            user.uid
-          ], // Add the user who created the group as the first member
-          'memberPoints': {user.uid: 0}, // Add the user with initial points 0
+          'members': [user.uid],
+          'memberPoints': {user.uid: 0},
+          'pickupPoints': {user.uid: selectedPickupPoint},
         });
 
-        // Update the user's collection with array of groups (created by them)
         await FirebaseFirestore.instance
             .collection('users')
             .doc(user.uid)
@@ -190,7 +226,7 @@ class _CreateRidePageState extends State<CreateRidePage> {
         showBackButton: true,
       ),
       body: Container(
-        color: Colors.white, // Set the background color to white
+        color: Colors.white,
         child: Center(
           child: SingleChildScrollView(
             child: Padding(
