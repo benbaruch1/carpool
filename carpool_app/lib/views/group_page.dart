@@ -11,10 +11,10 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geocoding/geocoding.dart';
-import 'package:carpool_app/widgets/top_bar.dart';
 import 'package:carpool_app/widgets/bottom_bar.dart';
 import 'package:carpool_app/widgets/custom_button.dart';
 import 'package:carpool_app/widgets/small_custom_button.dart';
+import 'package:carpool_app/widgets/top_bar.dart';
 
 class GroupPage extends StatefulWidget {
   final Group group;
@@ -50,205 +50,236 @@ class _GroupPageState extends State<GroupPage> {
         widget.group.thirdMeetingPoint,
     ];
 
-    return Scaffold(
-      appBar: TopBar(
-          title: widget.group.rideName,
-          showBackButton: true), // Use the existing TopBar with back button
-      body: Container(
-        color: Colors.white, // Set the background color to white
-        child: Column(
+    return DefaultTabController(
+      length: 2, // Two tabs: Details and Map
+      child: Scaffold(
+        appBar: PreferredSize(
+          preferredSize: Size.fromHeight(kToolbarHeight + kTextTabBarHeight),
+          child: Column(
+            children: [
+              TopBar(
+                title: widget.group.rideName,
+                showBackButton: true,
+              ),
+              TabBar(
+                tabs: [
+                  Tab(text: "Details"),
+                  Tab(text: "Map"),
+                ],
+              ),
+            ],
+          ),
+        ), // Use the custom AppBar with TopBar and TabBar
+        body: TabBarView(
           children: [
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildSectionTitle('Meeting Points'),
-                    _buildMeetingPoint(
-                        'First Meeting Point', widget.group.firstMeetingPoint),
-                    _buildMeetingPoint('Second Meeting Point',
-                        widget.group.secondMeetingPoint),
-                    _buildMeetingPoint(
-                        'Third Meeting Point', widget.group.thirdMeetingPoint),
-                    SizedBox(height: 20),
-                    _buildSectionTitle('Ride Details'),
-                    _buildRideDetail('Ride Name', widget.group.rideName),
-                    _buildRideDetail(
-                        'Selected Days', widget.group.selectedDays.join(', ')),
-                    _buildTimesSection(widget.group.times),
-                    SizedBox(height: 20),
-                    _buildMembersAndPointsHeader(),
-                    _buildMembersList(
-                        widget.group.members, widget.group.userId),
-                    SizedBox(height: 20),
-                    FutureBuilder<DocumentSnapshot>(
-                      future: FirebaseFirestore.instance
-                          .collection('groups')
-                          .doc(widget.group.uid)
-                          .get(),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return CircularProgressIndicator();
-                        } else if (snapshot.hasError) {
-                          return Text('Error loading group status');
-                        } else {
-                          var groupData =
-                              snapshot.data!.data() as Map<String, dynamic>;
-                          String status = groupData['status'] ?? 'not started';
+            // First tab: Details
+            Container(
+              color: const Color.fromARGB(
+                  255, 255, 255, 255), // Set the background color to white
+              child: Column(
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildSectionTitle('Meeting Points'),
+                          _buildMeetingPoint('First Meeting Point',
+                              widget.group.firstMeetingPoint),
+                          _buildMeetingPoint('Second Meeting Point',
+                              widget.group.secondMeetingPoint),
+                          _buildMeetingPoint('Third Meeting Point',
+                              widget.group.thirdMeetingPoint),
+                          _buildTimesSection(widget.group.times),
+                          SizedBox(height: 20),
+                          _buildMembersAndPointsHeader(),
+                          _buildMembersList(
+                              widget.group.members, widget.group.userId),
+                          SizedBox(height: 20),
+                          FutureBuilder<DocumentSnapshot>(
+                            future: FirebaseFirestore.instance
+                                .collection('groups')
+                                .doc(widget.group.uid)
+                                .get(),
+                            builder: (context, snapshot) {
+                              if (snapshot.connectionState ==
+                                  ConnectionState.waiting) {
+                                return CircularProgressIndicator();
+                              } else if (snapshot.hasError) {
+                                return Text('Error loading group status');
+                              } else {
+                                var groupData = snapshot.data!.data()
+                                    as Map<String, dynamic>;
+                                String status =
+                                    groupData['status'] ?? 'not started';
 
-                          if (status == 'started') {
-                            String currentDriver = groupData['nextDriver'];
-                            return FutureBuilder<bool>(
-                              future: _canEndDriveToday(),
-                              builder: (context, endDriveSnapshot) {
-                                if (endDriveSnapshot.connectionState ==
-                                    ConnectionState.waiting) {
-                                  return CircularProgressIndicator();
-                                } else if (endDriveSnapshot.hasError) {
-                                  return Text('Error');
-                                } else if (endDriveSnapshot.data! &&
-                                    currentDriver == widget.currentUserId) {
-                                  return _buildEndDriveButton(
-                                      context, currentDriver);
-                                } else if (endDriveSnapshot.data! &&
-                                    currentDriver != widget.currentUserId) {
-                                  return Text('The driver is on their way.',
-                                      style: TextStyle(color: Colors.green));
-                                } else if (currentDriver ==
-                                    widget.currentUserId) {
-                                  return Text(
-                                    'You can end the drive 10 minutes before the return time or until midnight.',
-                                    style: TextStyle(color: Colors.red),
+                                if (status == 'started') {
+                                  String currentDriver =
+                                      groupData['nextDriver'];
+                                  return FutureBuilder<bool>(
+                                    future: _canEndDriveToday(),
+                                    builder: (context, endDriveSnapshot) {
+                                      if (endDriveSnapshot.connectionState ==
+                                          ConnectionState.waiting) {
+                                        return CircularProgressIndicator();
+                                      } else if (endDriveSnapshot.hasError) {
+                                        return Text('Error');
+                                      } else if (endDriveSnapshot.data! &&
+                                          currentDriver ==
+                                              widget.currentUserId) {
+                                        return _buildEndDriveButton(
+                                            context, currentDriver);
+                                      } else if (endDriveSnapshot.data! &&
+                                          currentDriver !=
+                                              widget.currentUserId) {
+                                        return Text(
+                                            'The driver is on their way.',
+                                            style:
+                                                TextStyle(color: Colors.green));
+                                      } else if (currentDriver ==
+                                          widget.currentUserId) {
+                                        return Text(
+                                          'You can end the drive 10 minutes before the return time or until midnight.',
+                                          style: TextStyle(color: Colors.red),
+                                        );
+                                      } else {
+                                        return Text(
+                                            'The driver is on their way.',
+                                            style:
+                                                TextStyle(color: Colors.green));
+                                      }
+                                    },
                                   );
                                 } else {
-                                  return Text('The driver is on their way.',
-                                      style: TextStyle(color: Colors.green));
+                                  return FutureBuilder<String>(
+                                    future: _getDriverWithLowestPoints(),
+                                    builder: (context, driverSnapshot) {
+                                      if (driverSnapshot.connectionState ==
+                                          ConnectionState.waiting) {
+                                        return CircularProgressIndicator();
+                                      } else if (driverSnapshot.hasError) {
+                                        return Text(
+                                            'Error loading driver info');
+                                      } else {
+                                        return Column(children: [
+                                          _buildDriverInfo(
+                                              driverSnapshot.data!),
+                                          if (driverSnapshot.data ==
+                                              widget.currentUserId)
+                                            FutureBuilder<bool>(
+                                              future: _canStartDriveToday(),
+                                              builder: (context,
+                                                  startDriveSnapshot) {
+                                                if (startDriveSnapshot
+                                                        .connectionState ==
+                                                    ConnectionState.waiting) {
+                                                  return CircularProgressIndicator();
+                                                } else if (startDriveSnapshot
+                                                    .hasError) {
+                                                  return Text('Error');
+                                                } else if (startDriveSnapshot
+                                                    .data!) {
+                                                  return _buildStartDriveButton(
+                                                      context);
+                                                } else {
+                                                  return Text(
+                                                    'You can start the drive 15 minutes before the departure time.',
+                                                    style: TextStyle(
+                                                        color: Colors.red),
+                                                  );
+                                                }
+                                              },
+                                            ),
+                                        ]);
+                                      }
+                                    },
+                                  );
                                 }
-                              },
-                            );
-                          } else {
-                            return FutureBuilder<String>(
-                              future: _getDriverWithLowestPoints(),
-                              builder: (context, driverSnapshot) {
-                                if (driverSnapshot.connectionState ==
-                                    ConnectionState.waiting) {
-                                  return CircularProgressIndicator();
-                                } else if (driverSnapshot.hasError) {
-                                  return Text('Error loading driver info');
-                                } else {
-                                  return Column(children: [
-                                    _buildDriverInfo(driverSnapshot.data!),
-                                    if (driverSnapshot.data ==
-                                        widget.currentUserId)
-                                      FutureBuilder<bool>(
-                                        future: _canStartDriveToday(),
-                                        builder: (context, startDriveSnapshot) {
-                                          if (startDriveSnapshot
-                                                  .connectionState ==
-                                              ConnectionState.waiting) {
-                                            return CircularProgressIndicator();
-                                          } else if (startDriveSnapshot
-                                              .hasError) {
-                                            return Text('Error');
-                                          } else if (startDriveSnapshot.data!) {
-                                            return _buildStartDriveButton(
-                                                context);
-                                          } else {
-                                            return Text(
-                                              'You can start the drive 15 minutes before the departure time.',
-                                              style:
-                                                  TextStyle(color: Colors.red),
-                                            );
-                                          }
-                                        },
-                                      ),
-                                  ]);
-                                }
-                              },
-                            );
-                          }
-                        }
-                      },
-                    ),
-                    SizedBox(height: 10),
-                    SizedBox(
-                      height: 250,
-                      child: FlutterMap(
-                        options: MapOptions(
-                          initialCenter: Constants.initialCenter,
-                          initialZoom: 9.9,
-                        ),
-                        children: [
-                          TileLayer(
-                            urlTemplate:
-                                'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                            userAgentPackageName: 'com.carpool.app',
+                              }
+                            },
                           ),
-                          buildMarkerLayer(addresses),
-                          RichAttributionWidget(
-                            attributions: [
-                              TextSourceAttribution(
-                                'OpenStreetMap contributors',
-                                onTap: () => launchUrl(Uri.parse(
-                                    'https://openstreetmap.org/copyright')),
-                              ),
-                            ],
-                          ),
+                          SizedBox(height: 10),
                         ],
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                  if (isMember)
+                    Padding(
+                      padding: const EdgeInsets.all(10.0),
+                      child: CustomButton(
+                        label: 'Leave',
+                        color: Colors.red,
+                        onPressed: () async {
+                          await _leaveGroup(context);
+                        },
+                      ),
+                    ),
+                  if (!isMember && !isFull)
+                    Padding(
+                      padding: const EdgeInsets.all(14.0),
+                      child: CustomButton(
+                        label: 'Join',
+                        color: Colors.green,
+                        onPressed: () async {
+                          await _joinGroup(context);
+                        },
+                      ),
+                    ),
+                  if (isFull)
+                    Padding(
+                      padding: const EdgeInsets.all(14.0),
+                      child: Text(
+                        'This ride is full.',
+                        style: TextStyle(
+                            color: const Color.fromARGB(255, 254, 80, 67),
+                            fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                ],
               ),
             ),
-            if (isMember)
-              Padding(
-                padding: const EdgeInsets.all(10.0),
-                child: CustomButton(
-                  label: 'Leave',
-                  color: Colors.red,
-                  onPressed: () async {
-                    await _leaveGroup(context);
-                  },
+            // Second tab: Map
+            SizedBox(
+              height: 250,
+              child: FlutterMap(
+                options: MapOptions(
+                  initialCenter: Constants.initialCenter,
+                  initialZoom: 9.9,
                 ),
+                children: [
+                  TileLayer(
+                    urlTemplate:
+                        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    userAgentPackageName: 'com.carpool.app',
+                  ),
+                  buildMarkerLayer(addresses),
+                  RichAttributionWidget(
+                    attributions: [
+                      TextSourceAttribution(
+                        'OpenStreetMap contributors',
+                        onTap: () => launchUrl(
+                            Uri.parse('https://openstreetmap.org/copyright')),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-            if (!isMember && !isFull)
-              Padding(
-                padding: const EdgeInsets.all(14.0),
-                child: CustomButton(
-                  label: 'Join',
-                  color: Colors.green,
-                  onPressed: () async {
-                    await _joinGroup(context);
-                  },
-                ),
-              ),
-            if (isFull)
-              Padding(
-                padding: const EdgeInsets.all(14.0),
-                child: Text(
-                  'This ride is full.',
-                  style: TextStyle(
-                      color: const Color.fromARGB(255, 254, 80, 67),
-                      fontWeight: FontWeight.bold),
-                ),
-              ),
+            ),
           ],
         ),
-      ),
-      bottomNavigationBar: BottomBar(
-        selectedIndex: _selectedIndex,
-        onItemTapped: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => _widgetOptions[index]),
-          );
-        },
+        bottomNavigationBar: BottomBar(
+          selectedIndex: _selectedIndex,
+          onItemTapped: (index) {
+            setState(() {
+              _selectedIndex = index;
+            });
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => _widgetOptions[index]),
+            );
+          },
+        ),
       ),
     );
   }

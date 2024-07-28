@@ -90,7 +90,7 @@ class _LoginPageState extends State<LoginPage> {
                               );
                             },
                             child: Text(
-                              'Register',
+                              "Don't have an account? Sign up",
                               style: TextStyle(color: Colors.green),
                             ),
                           ),
