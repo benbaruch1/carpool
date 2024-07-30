@@ -478,7 +478,7 @@ class _CreateRidePageState extends State<CreateRidePage> {
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Center(
         child: Container(
-          width: 270, // Adjusted width to fit the text and controls
+          width: 280, // Adjusted width to fit the text and controls
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(10),
@@ -500,7 +500,7 @@ class _CreateRidePageState extends State<CreateRidePage> {
                     color: Colors.black,
                   ),
                 ),
-                SizedBox(width: 10),
+                SizedBox(width: 0),
                 IconButton(
                   icon: Icon(Icons.remove),
                   onPressed: _decrementSeats,
@@ -508,7 +508,7 @@ class _CreateRidePageState extends State<CreateRidePage> {
                   constraints: BoxConstraints(),
                 ),
                 SizedBox(
-                  width: 40,
+                  width: 20,
                   child: TextFormField(
                     controller: _availableSeatsController,
                     readOnly: true,

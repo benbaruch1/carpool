@@ -139,7 +139,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           borderSide: BorderSide(color: Colors.green),
                         ),
                         filled: true,
-                        fillColor: Colors.white,
+                        fillColor: const Color.fromARGB(0, 255, 255, 255),
                       ),
                       items: [1, 2, 3, 4, 5].map((int value) {
                         return DropdownMenuItem<int>(
