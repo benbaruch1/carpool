@@ -298,6 +298,9 @@ class _GroupPageState extends State<GroupPage> {
   }
 
   Widget _buildMeetingPoint(String title, String point) {
+    if (point == "") {
+      return SizedBox.shrink();
+    }
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: Text(
@@ -787,7 +790,7 @@ class _GroupPageState extends State<GroupPage> {
               widget.group.rideName,
           userId: widget.currentUserId,
         );
-        await notifyGroupAboutRideStart(widget.group, widget.currentUserId);
+        await notifyGroupAboutRideEnd(widget.group, widget.currentUserId);
         setState(() {});
       },
       label: 'End Drive',
@@ -1115,6 +1118,21 @@ class _GroupPageState extends State<GroupPage> {
       body: 'Your ride to ' +
           group.rideName +
           ' has just started. Please be ready at the meeting point.',
+      userIds: userIds,
+    );
+  }
+
+  Future<void> notifyGroupAboutRideEnd(
+      Group group, String currentUserId) async {
+    // Filter out the current driver from the user IDs
+    List<String> userIds =
+        group.members.where((userId) => userId != currentUserId).toList();
+
+    await sendNotificationToGroupMembers(
+      title: 'Ride ' + group.rideName + ' has ended!',
+      body: 'Your ride to ' +
+          group.rideName +
+          ' has ended. See you on the next ride!',
       userIds: userIds,
     );
   }
