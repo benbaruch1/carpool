@@ -40,7 +40,7 @@ class _GroupPageState extends State<GroupPage> {
   @override
   Widget build(BuildContext context) {
     bool isMember = widget.group.members.contains(widget.currentUserId);
-    bool isFull = widget.group.members.length >= 5;
+    bool isFull = widget.group.members.length >= widget.group.availableSeats;
 
     List<String> addresses = [
       widget.group.firstMeetingPoint,
@@ -590,6 +590,35 @@ class _GroupPageState extends State<GroupPage> {
             groupSnapshot.data() as Map<String, dynamic>;
         Map<String, int> memberPoints =
             Map<String, int>.from(groupData['memberPoints'] ?? {});
+
+        // Check if the user's availableSeats is greater than or equal to the number of members in the group
+        DocumentSnapshot userSnapshot = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(widget.currentUserId)
+            .get();
+        if (userSnapshot.exists) {
+          int userAvailableSeats = userSnapshot['availableSeats'];
+          int groupMembersCount = groupData['availableSeats'];
+
+          if (userAvailableSeats <= groupMembersCount) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                    'Cannot join the group because your available seats (${userAvailableSeats}) are less than the available seats (${groupMembersCount}) in this group.'),
+                duration: Duration(seconds: 5),
+              ),
+            );
+            return;
+          }
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('User data not found.'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+          return;
+        }
 
         // Check if user point == 0
         bool hasZeroPoints = memberPoints.values.any((points) => points == 0);

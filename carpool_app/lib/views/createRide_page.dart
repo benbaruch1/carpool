@@ -35,6 +35,8 @@ class _CreateRidePageState extends State<CreateRidePage> {
       TextEditingController();
   final TextEditingController _thirdMeetingPointController =
       TextEditingController();
+  final TextEditingController _availableSeatsController =
+      TextEditingController(text: '5');
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   int _selectedIndex = 0;
@@ -53,6 +55,26 @@ class _CreateRidePageState extends State<CreateRidePage> {
     for (String day in daysOfWeek) {
       departureTimes[day] = TextEditingController();
       returnTimes[day] = TextEditingController();
+    }
+
+    _fetchUserData();
+  }
+
+  Future<void> _fetchUserData() async {
+    var user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      var snapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+      if (snapshot.exists) {
+        var data = snapshot.data();
+        if (data != null && data.containsKey('availableSeats')) {
+          setState(() {
+            _availableSeatsController.text = data['availableSeats'].toString();
+          });
+        }
+      }
     }
   }
 
@@ -152,6 +174,7 @@ class _CreateRidePageState extends State<CreateRidePage> {
           'members': [user.uid],
           'memberPoints': {user.uid: 0},
           'pickupPoints': {user.uid: selectedPickupPoint},
+          'availableSeats': int.parse(_availableSeatsController.text),
         });
 
         await FirebaseFirestore.instance
@@ -218,6 +241,26 @@ class _CreateRidePageState extends State<CreateRidePage> {
     }
   }
 
+  void _incrementSeats() {
+    setState(() {
+      int currentSeats = int.parse(_availableSeatsController.text);
+      if (currentSeats < 5) {
+        currentSeats++;
+        _availableSeatsController.text = currentSeats.toString();
+      }
+    });
+  }
+
+  void _decrementSeats() {
+    setState(() {
+      int currentSeats = int.parse(_availableSeatsController.text);
+      if (currentSeats > 1) {
+        currentSeats--;
+        _availableSeatsController.text = currentSeats.toString();
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -265,6 +308,8 @@ class _CreateRidePageState extends State<CreateRidePage> {
                           style: TextStyle(color: Colors.green),
                         ),
                       ),
+                    SizedBox(height: 20),
+                    buildSeatsPicker(),
                     SizedBox(height: 20),
                     Row(
                       children: [
@@ -422,6 +467,67 @@ class _CreateRidePageState extends State<CreateRidePage> {
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget buildSeatsPicker() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Center(
+        child: Container(
+          width: 270, // Adjusted width to fit the text and controls
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: Colors.green, width: 2),
+          ),
+          child: Padding(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.directions_car, color: Colors.green),
+                SizedBox(width: 10),
+                Text(
+                  'Available Seats',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+                SizedBox(width: 10),
+                IconButton(
+                  icon: Icon(Icons.remove),
+                  onPressed: _decrementSeats,
+                  padding: EdgeInsets.zero,
+                  constraints: BoxConstraints(),
+                ),
+                SizedBox(
+                  width: 40,
+                  child: TextFormField(
+                    controller: _availableSeatsController,
+                    readOnly: true,
+                    decoration: InputDecoration(
+                      border: InputBorder.none,
+                      isDense: true,
+                      contentPadding: EdgeInsets.symmetric(vertical: 8.0),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(Icons.add),
+                  onPressed: _incrementSeats,
+                  padding: EdgeInsets.zero,
+                  constraints: BoxConstraints(),
+                ),
+              ],
+            ),
           ),
         ),
       ),

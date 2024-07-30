@@ -153,7 +153,7 @@ class _SearchRidePageState extends State<SearchRidePage> {
                           });
                         },
                       ),
-                      Text('Show full groups (5/5 members)'),
+                      Text('Show full groups '),
                       Spacer(),
                       ElevatedButton(
                         onPressed: _resetSearchFields,
@@ -294,16 +294,17 @@ class _SearchRidePageState extends State<SearchRidePage> {
                                                     ],
                                                   ),
                                                   SizedBox(height: 10),
+                                                  // Modified to show members out of availableSeats
                                                   Row(
                                                     children: [
                                                       Icon(Icons.group,
                                                           color: Colors.green),
                                                       SizedBox(width: 5),
                                                       Text(
-                                                          'Members: ${group.members.length}/5'),
+                                                          'Members: ${group.members.length}/${group.availableSeats}'),
                                                       if (group
                                                               .members.length >=
-                                                          5)
+                                                          group.availableSeats)
                                                         Text(
                                                           ' (FULL)',
                                                           style: TextStyle(
@@ -314,6 +315,7 @@ class _SearchRidePageState extends State<SearchRidePage> {
                                                         ),
                                                     ],
                                                   ),
+                                                  // End of modification
                                                 ],
                                               ),
                                             ),

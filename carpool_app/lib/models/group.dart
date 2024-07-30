@@ -9,9 +9,10 @@ class Group {
   final List<String> selectedDays;
   final String userId;
   final Map<String, int> memberPoints; // points
+  int availableSeats;
 
   Group({
-    required this.uid, // Add this field
+    required this.uid,
     required this.firstMeetingPoint,
     required this.secondMeetingPoint,
     required this.thirdMeetingPoint,
@@ -21,6 +22,7 @@ class Group {
     required this.selectedDays,
     required this.userId,
     required this.memberPoints,
+    required this.availableSeats,
   });
 
   factory Group.fromMap(Map<String, dynamic> data, String id) {
@@ -35,6 +37,7 @@ class Group {
       selectedDays: List<String>.from(data['selectedDays']),
       userId: data['userId'],
       memberPoints: Map<String, int>.from(data['memberPoints'] ?? {}),
+      availableSeats: data['availableSeats'] ?? 5,
     );
   }
 

@@ -13,21 +13,23 @@ class DatabaseService {
       FirebaseFirestore.instance.collection('groups');
 
   Future updateUserData(String email, String firstName, String phoneNumber,
-      String address) async {
+      String address, int availableSeats) async {
     return await usersCollection.doc(uid).set({
       'email': email,
       'firstName': firstName,
       'phoneNumber': phoneNumber,
       'address': address,
+      'availableSeats': availableSeats,
     });
   }
 
-  Future updateExistingUserData(
-      String firstName, String phoneNumber, String address) async {
+  Future updateExistingUserData(String firstName, String phoneNumber,
+      String address, int availableSeats) async {
     return await usersCollection.doc(uid).update({
       'firstName': firstName,
       'phoneNumber': phoneNumber,
       'address': address,
+      'availableSeats': availableSeats,
     });
   }
 
@@ -50,6 +52,7 @@ class DatabaseService {
       data['firstName'],
       data['phoneNumber'],
       data['address'],
+      data['availableSeats'],
     );
   }
 

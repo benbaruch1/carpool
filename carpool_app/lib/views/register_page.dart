@@ -18,6 +18,7 @@ class _RegisterPageState extends State<RegisterPage> {
   String firstName = '';
   String phoneNumber = '';
   String address = '';
+  int availableSeats = 5; // Default value is 5
   String error = '';
   bool loading = false;
 
@@ -74,6 +75,10 @@ class _RegisterPageState extends State<RegisterPage> {
                             address = val;
                           }, 'Enter your address', false),
                           SizedBox(height: 20),
+                          buildDropdownField('Available Seats', (val) {
+                            availableSeats = int.parse(val!);
+                          }, 'Select the number of available seats', false),
+                          SizedBox(height: 20),
                           buildTextField('Password', (val) {
                             password = val;
                           }, 'Enter a password 6+ chars long', true),
@@ -89,7 +94,8 @@ class _RegisterPageState extends State<RegisterPage> {
                                         password,
                                         firstName,
                                         phoneNumber,
-                                        address);
+                                        address,
+                                        availableSeats);
                                 if (result == null) {
                                   setState(() {
                                     loading = false;
@@ -163,6 +169,38 @@ class _RegisterPageState extends State<RegisterPage> {
       ),
       obscureText: obscureText,
       validator: (val) => val!.isEmpty ? validatorText : null,
+    );
+  }
+
+  Widget buildDropdownField(String label, Function(String?) onChanged,
+      String validatorText, bool obscureText) {
+    return DropdownButtonFormField<String>(
+      value: availableSeats.toString(),
+      decoration: InputDecoration(
+        labelText: label,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: Colors.green),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: Colors.green),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: Colors.green),
+        ),
+        filled: true,
+        fillColor: Colors.white,
+      ),
+      items: ['1', '2', '3', '4', '5'].map((String value) {
+        return DropdownMenuItem<String>(
+          value: value,
+          child: Text(value),
+        );
+      }).toList(),
+      onChanged: onChanged,
+      validator: (val) => val == null || val.isEmpty ? validatorText : null,
     );
   }
 }
