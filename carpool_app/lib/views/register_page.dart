@@ -77,7 +77,8 @@ class _RegisterPageState extends State<RegisterPage> {
                           SizedBox(height: 20),
                           buildDropdownField('Available Seats', (val) {
                             availableSeats = int.parse(val!);
-                          }, 'Select the number of available seats', false),
+                          }, 'Select the number of available seats', false,
+                              "Test", context),
                           SizedBox(height: 20),
                           buildTextField('Password', (val) {
                             password = val;
@@ -172,35 +173,80 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
-  Widget buildDropdownField(String label, Function(String?) onChanged,
-      String validatorText, bool obscureText) {
-    return DropdownButtonFormField<String>(
-      value: availableSeats.toString(),
-      decoration: InputDecoration(
-        labelText: label,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: Colors.green),
+  Widget buildDropdownField(
+    String label,
+    Function(String?) onChanged,
+    String validatorText,
+    bool obscureText,
+    String tooltipMessage,
+    BuildContext context,
+  ) {
+    void _showInfoDialog() {
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text('Available Seats Information'),
+            content: Text(
+                'Please choose your number of seats available in your car, including you as a driver.\n'
+                'For example, \nif you have 4 seats for passengers, please choose 5 available seats.'),
+            actions: <Widget>[
+              TextButton(
+                child: Text('Close'),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+            ],
+          );
+        },
+      );
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: DropdownButtonFormField<String>(
+            value: availableSeats.toString(),
+            decoration: InputDecoration(
+              labelText: label,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(color: Colors.green),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(color: Colors.green),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(color: Colors.green),
+              ),
+              filled: true,
+              fillColor: Colors.white,
+            ),
+            items: ['1', '2', '3', '4', '5'].map((String value) {
+              return DropdownMenuItem<String>(
+                value: value,
+                child: Text(value),
+              );
+            }).toList(),
+            onChanged: onChanged,
+            validator: (val) =>
+                val == null || val.isEmpty ? validatorText : null,
+          ),
         ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: Colors.green),
+        SizedBox(width: 2),
+        Padding(
+          padding: EdgeInsets.only(top: 2),
+          child: IconButton(
+            icon: Icon(Icons.info_outline, color: Colors.green, size: 20),
+            onPressed: _showInfoDialog,
+            tooltip: tooltipMessage,
+          ),
         ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: Colors.green),
-        ),
-        filled: true,
-        fillColor: Colors.white,
-      ),
-      items: ['1', '2', '3', '4', '5'].map((String value) {
-        return DropdownMenuItem<String>(
-          value: value,
-          child: Text(value),
-        );
-      }).toList(),
-      onChanged: onChanged,
-      validator: (val) => val == null || val.isEmpty ? validatorText : null,
+      ],
     );
   }
 }

@@ -36,7 +36,7 @@ class _LoginPageState extends State<LoginPage> {
               child: Center(
                 child: SingleChildScrollView(
                   child: Padding(
-                    padding: const EdgeInsets.all(16.0),
+                    padding: const EdgeInsets.fromLTRB(16.0, 64.0, 16.0, 16.0),
                     child: Form(
                       key: _formKey,
                       child: Column(
@@ -81,6 +81,10 @@ class _LoginPageState extends State<LoginPage> {
                             },
                           ),
                           SizedBox(height: 10),
+                          Text(
+                            error,
+                            style: TextStyle(color: Colors.red, fontSize: 16.0),
+                          ),
                           TextButton(
                             onPressed: () {
                               Navigator.push(
@@ -91,7 +95,8 @@ class _LoginPageState extends State<LoginPage> {
                             },
                             child: Text(
                               "Don't have an account? Sign up",
-                              style: TextStyle(color: Colors.green),
+                              style:
+                                  TextStyle(color: Colors.green, fontSize: 16),
                             ),
                           ),
                           SizedBox(height: 30),
@@ -101,10 +106,6 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                           SizedBox(
                             height: 12.0,
-                          ),
-                          Text(
-                            error,
-                            style: TextStyle(color: Colors.red, fontSize: 12.0),
                           ),
                         ],
                       ),
