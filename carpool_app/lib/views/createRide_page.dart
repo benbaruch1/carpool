@@ -41,6 +41,7 @@ class _CreateRidePageState extends State<CreateRidePage> {
 
   int _selectedIndex = 0;
   int _meetingPointsCount = 1;
+  int? _maxSeats;
 
   static List<Widget> _widgetOptions = <Widget>[
     HomePage(),
@@ -72,6 +73,7 @@ class _CreateRidePageState extends State<CreateRidePage> {
         if (data != null && data.containsKey('availableSeats')) {
           setState(() {
             _availableSeatsController.text = data['availableSeats'].toString();
+            _maxSeats = data['availableSeats'];
           });
         }
       }
@@ -161,6 +163,20 @@ class _CreateRidePageState extends State<CreateRidePage> {
       }
 
       try {
+        var snapshot = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
+        int maxSeats = snapshot.data()?['availableSeats'] ?? 5;
+
+        int selectedSeats = int.parse(_availableSeatsController.text);
+
+        if (selectedSeats > maxSeats) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Selected seats exceed available seats')),
+          );
+          return;
+        }
         DocumentReference groupRef =
             await FirebaseFirestore.instance.collection('groups').add({
           'rideName': _rideNameController.text,
@@ -174,7 +190,7 @@ class _CreateRidePageState extends State<CreateRidePage> {
           'members': [user.uid],
           'memberPoints': {user.uid: 0},
           'pickupPoints': {user.uid: selectedPickupPoint},
-          'availableSeats': int.parse(_availableSeatsController.text),
+          'availableSeats': selectedSeats,
         });
 
         await FirebaseFirestore.instance
@@ -244,7 +260,7 @@ class _CreateRidePageState extends State<CreateRidePage> {
   void _incrementSeats() {
     setState(() {
       int currentSeats = int.parse(_availableSeatsController.text);
-      if (currentSeats < 5) {
+      if (_maxSeats != null && currentSeats < _maxSeats!) {
         currentSeats++;
         _availableSeatsController.text = currentSeats.toString();
       }

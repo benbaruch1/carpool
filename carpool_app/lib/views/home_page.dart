@@ -99,7 +99,7 @@ class _HomePageState extends State<HomePage> {
                       return Text('User data not found');
                     } else {
                       return _buildWelcomeCard(
-                        'Welcome back, ${snapshot.data!.firstName}',
+                        'Welcome, ${snapshot.data!.firstName}',
                       );
                     }
                   },

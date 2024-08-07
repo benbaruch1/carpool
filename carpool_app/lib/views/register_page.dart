@@ -78,7 +78,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           buildDropdownField('Available Seats', (val) {
                             availableSeats = int.parse(val!);
                           }, 'Select the number of available seats', false,
-                              "Test", context),
+                              "Info", context),
                           SizedBox(height: 20),
                           buildTextField('Password', (val) {
                             password = val;
