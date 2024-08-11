@@ -54,6 +54,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    print("[LOG] my profile opened ");
     return Scaffold(
       appBar: TopBar(title: 'My Profile', showBackButton: false),
       body: Container(
@@ -122,39 +123,49 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                     ),
                     SizedBox(height: 10),
-                    DropdownButtonFormField<int>(
-                      value: _availableSeats,
-                      decoration: InputDecoration(
-                        labelText: 'Available Seats',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: BorderSide(color: Colors.green),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: DropdownButtonFormField<int>(
+                            value: _availableSeats,
+                            decoration: InputDecoration(
+                              labelText: 'Available Seats',
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: BorderSide(color: Colors.green),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: BorderSide(color: Colors.green),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: BorderSide(color: Colors.green),
+                              ),
+                              filled: true,
+                              fillColor: const Color.fromARGB(0, 255, 255, 255),
+                            ),
+                            items: [1, 2, 3, 4, 5].map((int value) {
+                              return DropdownMenuItem<int>(
+                                value: value,
+                                child: Text(value.toString()),
+                              );
+                            }).toList(),
+                            onChanged: (val) {
+                              setState(() {
+                                _availableSeats = val!;
+                              });
+                            },
+                            validator: (val) => val == null
+                                ? 'Select the number of available seats'
+                                : null,
+                          ),
                         ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: BorderSide(color: Colors.green),
+                        IconButton(
+                          icon: Icon(Icons.info, color: Colors.green),
+                          onPressed: _showInfoDialog,
                         ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: BorderSide(color: Colors.green),
-                        ),
-                        filled: true,
-                        fillColor: const Color.fromARGB(0, 255, 255, 255),
-                      ),
-                      items: [1, 2, 3, 4, 5].map((int value) {
-                        return DropdownMenuItem<int>(
-                          value: value,
-                          child: Text(value.toString()),
-                        );
-                      }).toList(),
-                      onChanged: (val) {
-                        setState(() {
-                          _availableSeats = val!;
-                        });
-                      },
-                      validator: (val) => val == null
-                          ? 'Select the number of available seats'
-                          : null,
+                      ],
                     ),
                     SizedBox(height: 20),
                     Center(
@@ -268,5 +279,27 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
       );
     });
+  }
+
+  void _showInfoDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Available Seats Information'),
+          content: Text(
+              'Please choose your number of seats available in your car, including you as a driver.\n'
+              'For example, \nif you have 4 seats for passengers, please choose 5 available seats.'),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Close'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 }

@@ -19,6 +19,7 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    print("[LOG] login page opened ");
     return loading
         ? Loading()
         : Scaffold(

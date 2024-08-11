@@ -279,6 +279,7 @@ class _CreateRidePageState extends State<CreateRidePage> {
 
   @override
   Widget build(BuildContext context) {
+    print("[LOG] Create ride opened ");
     return Scaffold(
       appBar: TopBar(
         title: 'Create group',
@@ -493,60 +494,94 @@ class _CreateRidePageState extends State<CreateRidePage> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Center(
-        child: Container(
-          width: 280, // Adjusted width to fit the text and controls
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: Colors.green, width: 2),
-          ),
-          child: Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.directions_car, color: Colors.green),
-                SizedBox(width: 10),
-                Text(
-                  'Available Seats',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
-                ),
-                SizedBox(width: 0),
-                IconButton(
-                  icon: Icon(Icons.remove),
-                  onPressed: _decrementSeats,
-                  padding: EdgeInsets.zero,
-                  constraints: BoxConstraints(),
-                ),
-                SizedBox(
-                  width: 20,
-                  child: TextFormField(
-                    controller: _availableSeatsController,
-                    readOnly: true,
-                    decoration: InputDecoration(
-                      border: InputBorder.none,
-                      isDense: true,
-                      contentPadding: EdgeInsets.symmetric(vertical: 8.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 280,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.green, width: 2),
+              ),
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.directions_car, color: Colors.green),
+                    SizedBox(width: 10),
+                    Text(
+                      'Available Seats',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
                     ),
-                    textAlign: TextAlign.center,
-                  ),
+                    SizedBox(width: 0),
+                    IconButton(
+                      icon: Icon(Icons.remove),
+                      onPressed: _decrementSeats,
+                      padding: EdgeInsets.zero,
+                      constraints: BoxConstraints(),
+                    ),
+                    SizedBox(
+                      width: 20,
+                      child: TextFormField(
+                        controller: _availableSeatsController,
+                        readOnly: true,
+                        decoration: InputDecoration(
+                          border: InputBorder.none,
+                          isDense: true,
+                          contentPadding: EdgeInsets.symmetric(vertical: 8.0),
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.add),
+                      onPressed: _incrementSeats,
+                      padding: EdgeInsets.zero,
+                      constraints: BoxConstraints(),
+                    ),
+                  ],
                 ),
-                IconButton(
-                  icon: Icon(Icons.add),
-                  onPressed: _incrementSeats,
-                  padding: EdgeInsets.zero,
-                  constraints: BoxConstraints(),
-                ),
-              ],
+              ),
             ),
-          ),
+            SizedBox(width: 10),
+            IconButton(
+              icon: Icon(Icons.info, color: Colors.green),
+              onPressed: _showInfoDialog,
+              padding: EdgeInsets.zero,
+              constraints: BoxConstraints(),
+            ),
+          ],
         ),
       ),
+    );
+  }
+
+  void _showInfoDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Available Seats Information'),
+          content: Text(
+              'Please choose your number of seats available in your car, including you as a driver.\n'
+              'For example, \nif you have 4 seats for passengers, please choose 5 available seats.'),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Close'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 }

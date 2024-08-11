@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:carpool_app/models/user.dart';
 import 'package:carpool_app/services/firebase_auth_service.dart';
 import 'package:carpool_app/shared/loading.dart';
-import 'package:carpool_app/views/home_wrapper.dart';
 import 'package:carpool_app/views/myprofile_page.dart';
 import 'package:carpool_app/views/myRides_page.dart';
 import 'package:carpool_app/views/notification_page.dart';
