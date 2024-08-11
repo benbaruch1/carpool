@@ -23,7 +23,6 @@ class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
 
   final List<Widget> _widgetOptions = <Widget>[
-    HomePage(),
     MyRidesPage(),
     NotificationPage(),
     ProfilePage(),
@@ -40,10 +39,6 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       _selectedIndex = index;
     });
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => _widgetOptions[index]),
-    );
   }
 
   @override
@@ -53,9 +48,8 @@ class _HomePageState extends State<HomePage> {
     return loading
         ? Loading()
         : Scaffold(
-            appBar: TopBar(
-                title: _selectedIndex == 0 ? 'Home' : _titles[_selectedIndex],
-                showBackButton: false),
+            appBar:
+                TopBar(title: _titles[_selectedIndex], showBackButton: false),
             body: _selectedIndex == 0
                 ? _buildHomePage(context, myUser)
                 : _widgetOptions.elementAt(_selectedIndex - 1),

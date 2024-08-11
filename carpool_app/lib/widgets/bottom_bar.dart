@@ -48,8 +48,9 @@ class BottomBar extends StatelessWidget {
               TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
           unselectedLabelStyle: TextStyle(fontSize: 12),
           onTap: (index) {
+            print("[LOG1] Navigating to page with index: $index");
             onItemTapped(index);
-            Navigator.pushAndRemoveUntil(
+            Navigator.pushReplacement(
               context,
               MaterialPageRoute(builder: (context) {
                 switch (index) {
@@ -65,7 +66,6 @@ class BottomBar extends StatelessWidget {
                     return HomePage();
                 }
               }),
-              (Route<dynamic> route) => false,
             );
           },
           type: BottomNavigationBarType.fixed,

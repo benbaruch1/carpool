@@ -69,13 +69,12 @@ class _MyRidesPageState extends State<MyRidesPage> {
   }
 
   void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => _widgetOptions[index]),
-    );
+    if (index != _selectedIndex) {
+      print("[LOG] MyRidesPage: updating selected index to $index");
+      setState(() {
+        _selectedIndex = index;
+      });
+    }
   }
 
   static List<Widget> _widgetOptions = <Widget>[
@@ -87,6 +86,7 @@ class _MyRidesPageState extends State<MyRidesPage> {
 
   @override
   Widget build(BuildContext context) {
+    print("[LOG] my rides opened ");
     return Scaffold(
       appBar: TopBar(title: 'My Rides', showBackButton: false),
       body: Container(

@@ -81,6 +81,7 @@ class _CreateRidePageState extends State<CreateRidePage> {
   }
 
   Future<void> _createRide() async {
+    print("[LOG] _createRide called");
     if (_formKey.currentState!.validate()) {
       if (selectedDays.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -240,13 +241,11 @@ class _CreateRidePageState extends State<CreateRidePage> {
   }
 
   void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => _widgetOptions[index]),
-    );
+    if (index != _selectedIndex) {
+      setState(() {
+        _selectedIndex = index;
+      });
+    }
   }
 
   void _addMeetingPoint() {
