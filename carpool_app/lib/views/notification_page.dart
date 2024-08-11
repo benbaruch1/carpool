@@ -20,6 +20,7 @@ class _NotificationPageState extends State<NotificationPage> {
 
   @override
   Widget build(BuildContext context) {
+    print("[LOG] notif opened ");
     return Scaffold(
       appBar: TopBar(title: 'Notifications', showBackButton: false),
       body: Column(
