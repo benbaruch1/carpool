@@ -37,24 +37,32 @@ class _LoginPageState extends State<LoginPage> {
               child: Center(
                 child: SingleChildScrollView(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16.0, 64.0, 16.0, 16.0),
+                    padding: const EdgeInsets.fromLTRB(16.0, 32.0, 16.0, 16.0),
                     child: Form(
                       key: _formKey,
                       child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: <Widget>[
-                          Text(
-                            'Carpool',
-                            style: TextStyle(
-                                fontSize: 32,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black),
+                          Align(
+                            alignment: Alignment.topCenter,
+                            child: Column(
+                              children: [
+                                Text(
+                                  'Carpool',
+                                  style: TextStyle(
+                                      fontSize: 32,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black),
+                                ),
+                                Text(
+                                  'Match, Drive, Share',
+                                  style: TextStyle(
+                                      fontSize: 18, color: Colors.black),
+                                ),
+                              ],
+                            ),
                           ),
-                          Text(
-                            'Match, Drive, Share',
-                            style: TextStyle(fontSize: 18, color: Colors.black),
-                          ),
-                          SizedBox(height: 20),
+                          SizedBox(height: 40),
                           buildTextField('Email', (val) {
                             email = val;
                           }, 'Enter an email', false),
@@ -81,7 +89,7 @@ class _LoginPageState extends State<LoginPage> {
                               }
                             },
                           ),
-                          SizedBox(height: 10),
+                          SizedBox(height: 3),
                           Text(
                             error,
                             style: TextStyle(color: Colors.red, fontSize: 16.0),
@@ -100,10 +108,13 @@ class _LoginPageState extends State<LoginPage> {
                                   TextStyle(color: Colors.green, fontSize: 16),
                             ),
                           ),
-                          SizedBox(height: 30),
-                          Image.asset(
-                            'assets/car_image.png',
-                            height: 300,
+                          SizedBox(height: 20),
+                          Align(
+                            alignment: Alignment.center,
+                            child: Image.asset(
+                              'assets/car_image.png',
+                              height: 250,
+                            ),
                           ),
                           SizedBox(
                             height: 12.0,
