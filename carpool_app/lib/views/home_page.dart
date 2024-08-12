@@ -10,7 +10,7 @@ import 'package:carpool_app/views/createRide_page.dart';
 import 'package:carpool_app/views/searchRide_page.dart';
 import 'package:carpool_app/widgets/top_bar.dart';
 import 'package:carpool_app/widgets/bottom_bar.dart';
-import 'package:url_launcher/url_launcher.dart'; // Importing url_launcher package
+import 'package:url_launcher/url_launcher.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -60,7 +60,7 @@ class _HomePageState extends State<HomePage> {
               selectedIndex: _selectedIndex,
               onItemTapped: _onItemTapped,
             ),
-            drawer: _buildDrawer(context), // Add this line to include a drawer
+            drawer: _buildDrawer(context),
           );
   }
 

@@ -24,6 +24,8 @@ class _SearchRidePageState extends State<SearchRidePage> {
   Future<List<Group>>? _searchResults;
   int _selectedIndex = 0;
 
+  ScrollController _scrollController = ScrollController();
+
   DatabaseService databaseService =
       DatabaseService(FirebaseAuth.instance.currentUser!.uid);
 
@@ -40,6 +42,17 @@ class _SearchRidePageState extends State<SearchRidePage> {
     setState(() {
       _searchResults = Future.value(results);
     });
+
+    //go down for search result
+    if (results.isNotEmpty) {
+      Future.delayed(Duration(milliseconds: 200), () {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent + 150,
+          duration: Duration(seconds: 1),
+          curve: Curves.easeInOut,
+        );
+      });
+    }
   }
 
   void _resetSearchFields() {
@@ -89,6 +102,7 @@ class _SearchRidePageState extends State<SearchRidePage> {
         color: Colors.white,
         child: Center(
           child: SingleChildScrollView(
+            controller: _scrollController,
             child: Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
@@ -153,13 +167,13 @@ class _SearchRidePageState extends State<SearchRidePage> {
                           });
                         },
                       ),
-                      Text('Show full groups '),
+                      Text('Show also full groups '),
                       Spacer(),
                       ElevatedButton(
                         onPressed: _resetSearchFields,
                         child: Text('Reset'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Color.fromARGB(255, 76, 244, 54),
+                          backgroundColor: Color.fromARGB(70, 0, 255, 0),
                           padding:
                               EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         ),
