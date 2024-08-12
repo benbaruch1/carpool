@@ -10,6 +10,7 @@ import 'package:carpool_app/views/createRide_page.dart';
 import 'package:carpool_app/views/searchRide_page.dart';
 import 'package:carpool_app/widgets/top_bar.dart';
 import 'package:carpool_app/widgets/bottom_bar.dart';
+import 'package:url_launcher/url_launcher.dart'; // Importing url_launcher package
 
 class HomePage extends StatefulWidget {
   @override
@@ -48,8 +49,10 @@ class _HomePageState extends State<HomePage> {
     return loading
         ? Loading()
         : Scaffold(
-            appBar:
-                TopBar(title: _titles[_selectedIndex], showBackButton: false),
+            appBar: TopBar(
+              title: _titles[_selectedIndex],
+              showBackButton: false,
+            ),
             body: _selectedIndex == 0
                 ? _buildHomePage(context, myUser)
                 : _widgetOptions.elementAt(_selectedIndex - 1),
@@ -57,7 +60,46 @@ class _HomePageState extends State<HomePage> {
               selectedIndex: _selectedIndex,
               onItemTapped: _onItemTapped,
             ),
+            drawer: _buildDrawer(context), // Add this line to include a drawer
           );
+  }
+
+  Widget _buildDrawer(BuildContext context) {
+    return Drawer(
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: <Widget>[
+          DrawerHeader(
+            decoration: BoxDecoration(
+              color: Colors.green,
+            ),
+            child: Text(
+              'Carpool',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 24,
+              ),
+            ),
+          ),
+          ListTile(
+            leading: Icon(Icons.info),
+            title: Text('About'),
+            onTap: () {
+              Navigator.pop(context); // Close the drawer
+              _showAboutDialog(context);
+            },
+          ),
+          ListTile(
+            leading: Icon(Icons.contact_mail),
+            title: Text('Contact Us'),
+            onTap: () {
+              Navigator.pop(context); // Close the drawer
+              _showContactUsDialog(context);
+            },
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildHomePage(BuildContext context, MyUser? myUser) {
@@ -213,5 +255,113 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
     );
+  }
+
+  void _showAboutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('About CarPool'),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                Text(
+                    'CarPool is a ride-sharing application designed to help drivers find carpool groups heading to Ort Braude College. The app enables users to register and log in, with all participants being drivers. Drivers can create new carpool groups or search for existing ones based on criteria such as starting location, schedule, or group creator name.'),
+                SizedBox(height: 10),
+                Text(
+                    'Once a group reaches its maximum number of participants, it is closed to new members. After a group is created, the creator cannot make changes or delete the group but can leave it without affecting its existence. A group is automatically deleted when it has no participants.'),
+                SizedBox(height: 10),
+                Text(
+                    'Each group has a dedicated page where the system calculates the driver for the day based on the lowest points. Drivers earn points each time they drive, and the system selects the next day\'s driver based on the lowest point total.'),
+                SizedBox(height: 10),
+                Text(
+                    'Each group also includes predefined pick-up points, and participants can select their preferred pick-up point.'),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Close'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showContactUsDialog(BuildContext context) {
+    final TextEditingController _messageController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Contact Us'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Text(
+                'Please enter your message below:',
+              ),
+              SizedBox(height: 10),
+              TextField(
+                controller: _messageController,
+                maxLines: 4,
+                decoration: InputDecoration(
+                  hintText: 'Your message',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: Text('Send'),
+              onPressed: () {
+                final String message = _messageController.text;
+                if (message.isNotEmpty) {
+                  _sendEmail(message);
+                  Navigator.of(context).pop();
+                } else {
+                  print('Message is empty');
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _sendEmail(String message) async {
+    final Uri emailLaunchUri = Uri(
+      scheme: 'mailto',
+      path: 'ravidp30@walla.com',
+      query: encodeQueryParameters(<String, String>{
+        'subject': 'Contact Us Message from CarPool App',
+        'body': message,
+      }),
+    );
+
+    launchUrl(emailLaunchUri);
+  }
+
+  String? encodeQueryParameters(Map<String, String> params) {
+    return params.entries
+        .map((MapEntry<String, String> e) =>
+            '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+        .join('&');
   }
 }
