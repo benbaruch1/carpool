@@ -600,7 +600,7 @@ class _GroupPageState extends State<GroupPage> {
           int userAvailableSeats = userSnapshot['availableSeats'];
           int groupMembersCount = groupData['availableSeats'];
 
-          if (userAvailableSeats <= groupMembersCount) {
+          if (userAvailableSeats < groupMembersCount) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(

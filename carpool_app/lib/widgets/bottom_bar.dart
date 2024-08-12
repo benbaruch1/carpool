@@ -3,6 +3,9 @@ import 'package:carpool_app/views/home_page.dart';
 import 'package:carpool_app/views/myRides_page.dart';
 import 'package:carpool_app/views/notification_page.dart';
 import 'package:carpool_app/views/myprofile_page.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:badges/badges.dart' as badges;
 
 class BottomBar extends StatelessWidget {
   final int selectedIndex;
@@ -12,6 +15,8 @@ class BottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final String currentUserId = FirebaseAuth.instance.currentUser!.uid;
+
     return Container(
       margin: EdgeInsets.only(bottom: 10, left: 20, right: 20),
       decoration: BoxDecoration(
@@ -23,7 +28,7 @@ class BottomBar extends StatelessWidget {
         child: BottomNavigationBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
-          items: const <BottomNavigationBarItem>[
+          items: <BottomNavigationBarItem>[
             BottomNavigationBarItem(
               icon: Icon(Icons.home, size: 30),
               label: 'Home',
@@ -33,7 +38,7 @@ class BottomBar extends StatelessWidget {
               label: 'My Rides',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.notifications, size: 30),
+              icon: _buildNotificationIcon(currentUserId),
               label: 'Notifications',
             ),
             BottomNavigationBarItem(
@@ -71,6 +76,30 @@ class BottomBar extends StatelessWidget {
           type: BottomNavigationBarType.fixed,
         ),
       ),
+    );
+  }
+
+  Widget _buildNotificationIcon(String currentUserId) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('notifications')
+          .where('userId', isEqualTo: currentUserId)
+          .where('isRead', isEqualTo: false)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
+          int unreadCount = snapshot.data!.docs.length;
+          return badges.Badge(
+            badgeContent: Text(
+              unreadCount.toString(),
+              style: TextStyle(color: Colors.white),
+            ),
+            child: Icon(Icons.notifications, size: 30),
+          );
+        } else {
+          return Icon(Icons.notifications, size: 30);
+        }
+      },
     );
   }
 }
