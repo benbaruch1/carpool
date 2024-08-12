@@ -109,6 +109,23 @@ class _CreateRidePageState extends State<CreateRidePage> {
         );
         return;
       }
+      bool returnAfterDeparture = true;
+      selectedDays.forEach((day) {
+        TimeOfDay departureTime = _parseTime(departureTimes[day]!.text);
+        TimeOfDay returnTime = _parseTime(returnTimes[day]!.text);
+        if (!_isReturnAfterDeparture(departureTime, returnTime)) {
+          returnAfterDeparture = false;
+        }
+      });
+
+      if (!returnAfterDeparture) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('Return time must be after the departure time'),
+              duration: Duration(seconds: 2)),
+        );
+        return;
+      }
 
       Map<String, Map<String, String>> times = {};
       selectedDays.forEach((day) {
@@ -220,6 +237,22 @@ class _CreateRidePageState extends State<CreateRidePage> {
         );
       }
     }
+  }
+
+  TimeOfDay _parseTime(String time) {
+    final parts = time.split(':');
+    final hour = int.parse(parts[0]);
+    final minute = int.parse(parts[1]);
+    return TimeOfDay(hour: hour, minute: minute);
+  }
+
+  bool _isReturnAfterDeparture(TimeOfDay departureTime, TimeOfDay returnTime) {
+    if (returnTime.hour > departureTime.hour) {
+      return true;
+    } else if (returnTime.hour == departureTime.hour) {
+      return returnTime.minute > departureTime.minute;
+    }
+    return false;
   }
 
   Future<void> _selectTime(
