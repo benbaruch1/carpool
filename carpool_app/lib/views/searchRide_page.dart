@@ -48,7 +48,7 @@ class _SearchRidePageState extends State<SearchRidePage> {
       Future.delayed(Duration(milliseconds: 200), () {
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent + 150,
-          duration: Duration(seconds: 1),
+          duration: Duration(milliseconds: 10),
           curve: Curves.easeInOut,
         );
       });

@@ -80,7 +80,9 @@ class DatabaseService {
 
     // Filter out full groups if showFullGroups is false
     if (!showFullGroups) {
-      results = results.where((group) => group.members.length < 5).toList();
+      results = results
+          .where((group) => group.members.length < group.availableSeats)
+          .toList();
     }
 
     // Apply additional filters
