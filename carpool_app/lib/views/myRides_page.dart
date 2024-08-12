@@ -196,6 +196,11 @@ class _MyRidesPageState extends State<MyRidesPage> {
   List<Widget> _buildRouteIcons(DocumentSnapshot ride) {
     List<Widget> routeIcons = [];
     List<String> meetingPoints = [];
+    String currentUserId = FirebaseAuth.instance.currentUser!.uid;
+
+    // Fetch the user's selected meeting point from the ride's members data
+    String? userMeetingPoint = ride['pickupPoints'][currentUserId];
+
     if (ride['firstMeetingPoint'] != '') {
       meetingPoints.add(ride['firstMeetingPoint']);
     }
@@ -207,7 +212,19 @@ class _MyRidesPageState extends State<MyRidesPage> {
     }
 
     for (int i = 0; i < meetingPoints.length; i++) {
-      routeIcons.add(Text(meetingPoints[i]));
+      routeIcons.add(
+        Text(
+          meetingPoints[i],
+          style: TextStyle(
+            color: meetingPoints[i] == userMeetingPoint
+                ? Colors.red
+                : Colors.black,
+            fontWeight: meetingPoints[i] == userMeetingPoint
+                ? FontWeight.bold
+                : FontWeight.normal,
+          ),
+        ),
+      );
       if (i != meetingPoints.length - 1) {
         routeIcons.add(Icon(Icons.arrow_forward, color: Colors.green));
       }
