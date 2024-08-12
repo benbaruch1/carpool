@@ -29,6 +29,7 @@ class GroupPage extends StatefulWidget {
 class _GroupPageState extends State<GroupPage> {
   bool isDriverOnTheWay = false;
   int _selectedIndex = 0;
+  DateTime? _startTime;
 
   static List<Widget> _widgetOptions = <Widget>[
     HomePage(),
@@ -775,6 +776,12 @@ class _GroupPageState extends State<GroupPage> {
             .update({
           'status': 'started',
         });
+
+        // save the start time
+        setState(() {
+          _startTime = DateTime.now();
+        });
+
         sendNotification(
           title: 'You have started the ride ' + widget.group.rideName,
           body: 'You have successfully started the ride ' +
@@ -977,42 +984,151 @@ class _GroupPageState extends State<GroupPage> {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: Row(
-            children: [
-              Icon(Icons.map, color: Colors.green),
-              SizedBox(width: 10),
-              Text("Route", style: TextStyle(color: Colors.green)),
-            ],
-          ),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                _buildStyledMeetingPoint('First Meeting Point',
-                    widget.group.firstMeetingPoint, details),
-                Divider(color: Colors.green, thickness: 2),
-                _buildStyledMeetingPoint('Second Meeting Point',
-                    widget.group.secondMeetingPoint, details),
-                Divider(color: Colors.green, thickness: 2),
-                _buildStyledMeetingPoint('Third Meeting Point',
-                    widget.group.thirdMeetingPoint, details),
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: Row(
+                children: [
+                  Icon(Icons.directions_car, color: Colors.green),
+                  SizedBox(width: 10),
+                  Text("Ride Started", style: TextStyle(color: Colors.green)),
+                ],
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    if (_startTime != null)
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Driver started the ride at:'),
+                          SizedBox(height: 10),
+                          Text(
+                            DateFormat('HH:mm:ss').format(_startTime!),
+                            style: TextStyle(
+                                fontSize: 24, fontWeight: FontWeight.bold),
+                          ),
+                          SizedBox(height: 20),
+                          StreamBuilder<int>(
+                            stream:
+                                Stream.periodic(Duration(seconds: 1), (i) => i),
+                            builder: (context, snapshot) {
+                              int elapsedSeconds = snapshot.data ?? 0;
+                              Duration elapsed =
+                                  DateTime.now().difference(_startTime!);
+                              return Text(
+                                '${elapsed.inMinutes}:${(elapsed.inSeconds % 60).toString().padLeft(2, '0')} minutes passed',
+                                style: TextStyle(fontSize: 18),
+                              );
+                            },
+                          ),
+                          SizedBox(height: 20),
+                        ],
+                      ),
+                    _buildStyledRoutePoint('First Meeting Point',
+                        widget.group.firstMeetingPoint, details),
+                    _buildStyledRoutePoint('Second Meeting Point',
+                        widget.group.secondMeetingPoint, details),
+                    _buildStyledRoutePoint('Third Meeting Point',
+                        widget.group.thirdMeetingPoint, details),
+                  ],
+                ),
+              ),
+              actions: <Widget>[
+                TextButton(
+                  child: Text("OK", style: TextStyle(color: Colors.green)),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ],
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.all(Radius.circular(10)),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildStyledRoutePoint(String title, String point,
+      Map<String, List<Map<String, String>>> details) {
+    if (point.isEmpty) {
+      return SizedBox.shrink();
+    }
+
+    List<Map<String, String>> users = details[point] ?? [];
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.green[100],
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.green, width: 2),
+            ),
+            padding: EdgeInsets.all(12.0),
+            child: Row(
+              children: [
+                Icon(Icons.location_pin, color: Colors.red, size: 30),
+                SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green[800],
+                        ),
+                      ),
+                      Text(
+                        point,
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey[800],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
-          actions: <Widget>[
-            TextButton(
-              child: Text("OK", style: TextStyle(color: Colors.green)),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(10)),
-          ),
-        );
-      },
+          SizedBox(height: 10),
+          ...users.map((user) => Card(
+                color: Colors.blue[50],
+                margin: EdgeInsets.symmetric(vertical: 4.0),
+                child: ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: Colors.blue[100],
+                    child: Icon(Icons.person, color: Colors.blue[800]),
+                  ),
+                  title: Text(
+                    user['name']!,
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.black,
+                    ),
+                  ),
+                  subtitle: Text(
+                    'Phone: ${user['phone']}',
+                    style: TextStyle(fontSize: 14),
+                  ),
+                  trailing: IconButton(
+                    icon: Icon(Icons.call, color: Colors.green),
+                    onPressed: () => _makePhoneCall(user['phone']!),
+                  ),
+                ),
+              )),
+        ],
+      ),
     );
   }
 
