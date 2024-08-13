@@ -845,7 +845,8 @@ class _GroupPageState extends State<GroupPage> {
       print('Update successful');
       sendNotification(
           title: "Point Received! :)",
-          body: "Thanks for your drive. You have received your point.",
+          body:
+              "Thanks for your drive. You have received your point in the group '${widget.group.rideName}'.",
           userId: uid);
 
       // delete the nextDriver after he earn a point

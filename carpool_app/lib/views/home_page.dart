@@ -11,6 +11,7 @@ import 'package:carpool_app/views/searchRide_page.dart';
 import 'package:carpool_app/widgets/top_bar.dart';
 import 'package:carpool_app/widgets/bottom_bar.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:carpool_app/views/home_wrapper.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -66,36 +67,60 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildDrawer(BuildContext context) {
     return Drawer(
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: <Widget>[
-          DrawerHeader(
-            decoration: BoxDecoration(
-              color: Colors.green,
-            ),
-            child: Text(
-              'Carpool',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 24,
+      child: Stack(
+        children: [
+          ListView(
+            padding: EdgeInsets.zero,
+            children: <Widget>[
+              DrawerHeader(
+                decoration: BoxDecoration(
+                  color: Colors.green,
+                ),
+                child: Text(
+                  'Carpool',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                  ),
+                ),
+              ),
+              ListTile(
+                leading: Icon(Icons.info),
+                title: Text('About'),
+                onTap: () {
+                  Navigator.pop(context); // Close the drawer
+                  _showAboutDialog(context);
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.contact_mail),
+                title: Text('Contact Us'),
+                onTap: () {
+                  Navigator.pop(context); // Close the drawer
+                  _showContactUsDialog(context);
+                },
+              ),
+            ],
+          ),
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 20.0),
+              child: ListTile(
+                leading: Icon(Icons.logout, color: Colors.red),
+                title: Text(
+                  'Logout',
+                  style: TextStyle(color: Colors.red),
+                ),
+                onTap: () async {
+                  await _auth.signOut();
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (context) => HomeWrapper()),
+                  );
+                },
               ),
             ),
-          ),
-          ListTile(
-            leading: Icon(Icons.info),
-            title: Text('About'),
-            onTap: () {
-              Navigator.pop(context); // Close the drawer
-              _showAboutDialog(context);
-            },
-          ),
-          ListTile(
-            leading: Icon(Icons.contact_mail),
-            title: Text('Contact Us'),
-            onTap: () {
-              Navigator.pop(context); // Close the drawer
-              _showContactUsDialog(context);
-            },
           ),
         ],
       ),
