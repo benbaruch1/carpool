@@ -117,8 +117,9 @@ class DatabaseService {
           .map((doc) => doc.id)
           .toList();
 
-      results =
-          results.where((group) => userIds.contains(group.userId)).toList();
+      results = results.where((group) {
+        return group.members.any((memberId) => userIds.contains(memberId));
+      }).toList();
     }
 
     if (departureTime != null && departureTime.isNotEmpty) {
