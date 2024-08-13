@@ -18,7 +18,7 @@ class _SearchRidePageState extends State<SearchRidePage> {
   final TextEditingController _meetingPointController = TextEditingController();
   final TextEditingController _departureTimeController =
       TextEditingController();
-  final TextEditingController _rideNameController = TextEditingController();
+  final TextEditingController _groupNameController = TextEditingController();
   final List<String> selectedDays = [];
   bool _showFullGroups = true;
   Future<List<Group>>? _searchResults;
@@ -35,7 +35,7 @@ class _SearchRidePageState extends State<SearchRidePage> {
       departureTime: _departureTimeController.text,
       selectedDays: selectedDays,
       userId: _userNameController.text,
-      rideName: _rideNameController.text,
+      rideName: _groupNameController.text,
       showFullGroups: _showFullGroups,
     );
 
@@ -59,7 +59,7 @@ class _SearchRidePageState extends State<SearchRidePage> {
     _userNameController.clear();
     _meetingPointController.clear();
     _departureTimeController.clear();
-    _rideNameController.clear();
+    _groupNameController.clear();
     setState(() {
       selectedDays.clear();
       _showFullGroups = true;
@@ -109,7 +109,11 @@ class _SearchRidePageState extends State<SearchRidePage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: <Widget>[
                   SizedBox(height: 20),
-                  _buildTextField('Creator\'s first name:', _userNameController,
+                  _buildTextField('Group name:', _groupNameController,
+                      icon: Icons.directions_car),
+                  SizedBox(height: 10),
+                  _buildTextField(
+                      'User' + "'s" + ' first name:', _userNameController,
                       icon: Icons.person),
                   SizedBox(height: 10),
                   _buildTextField('Meeting point:', _meetingPointController,
@@ -153,9 +157,6 @@ class _SearchRidePageState extends State<SearchRidePage> {
                   SizedBox(height: 10),
                   _buildTextField('Departure time:', _departureTimeController,
                       icon: Icons.access_time, isTime: true),
-                  SizedBox(height: 10),
-                  _buildTextField('Ride name:', _rideNameController,
-                      icon: Icons.directions_car),
                   SizedBox(height: 20),
                   Row(
                     children: [
