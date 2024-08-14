@@ -1,26 +1,43 @@
 import 'package:carpool_app/services/firebase_auth_service.dart';
-import 'package:carpool_app/views/forgot_password_page.dart';
-import 'package:carpool_app/views/register_page.dart';
-import 'package:carpool_app/widgets/custom_button.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:carpool_app/widgets/custom_button.dart';
 import 'package:carpool_app/shared/loading.dart';
 
-class LoginPage extends StatefulWidget {
+class ForgotPasswordPage extends StatefulWidget {
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  _ForgotPasswordPageState createState() => _ForgotPasswordPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final AuthService _auth = AuthService();
   bool loading = false;
   String email = '';
-  String password = '';
   String error = '';
+
+  Future<void> _resetPassword() async {
+    if (_formKey.currentState!.validate()) {
+      setState(() => loading = true);
+      try {
+        await FirebaseAuth.instance.sendPasswordResetEmail(
+          email: email.trim(),
+        );
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Password reset email sent')),
+        );
+        setState(() => loading = false);
+      } on FirebaseAuthException catch (e) {
+        setState(() {
+          loading = false;
+          error = e.message ?? 'An error occurred';
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    print("[LOG] login page opened ");
     return loading
         ? Loading()
         : Scaffold(
@@ -49,14 +66,14 @@ class _LoginPageState extends State<LoginPage> {
                             child: Column(
                               children: [
                                 Text(
-                                  'Carpool',
+                                  'Forgot Password',
                                   style: TextStyle(
                                       fontSize: 32,
                                       fontWeight: FontWeight.bold,
                                       color: Colors.black),
                                 ),
                                 Text(
-                                  'Match, Drive, Share',
+                                  'Enter your email to reset password',
                                   style: TextStyle(
                                       fontSize: 18, color: Colors.black),
                                 ),
@@ -66,60 +83,23 @@ class _LoginPageState extends State<LoginPage> {
                           SizedBox(height: 40),
                           buildTextField('Email', (val) {
                             email = val;
-                          }, 'Enter an email', false),
-                          SizedBox(height: 20),
-                          buildTextField('Password', (val) {
-                            password = val;
-                          }, 'Enter a password 6+ chars long', true),
+                          }, 'Enter your email', false),
                           SizedBox(height: 20),
                           CustomButton(
-                            label: 'Sign in',
-                            onPressed: () async {
-                              if (_formKey.currentState!.validate()) {
-                                setState(() => loading = true);
-                                dynamic result =
-                                    await _auth.signInWithEmailAndPassword(
-                                        email, password);
-                                if (result == null) {
-                                  setState(() {
-                                    loading = false;
-                                    error =
-                                        'Could not sign in with those credentials';
-                                  });
-                                }
-                              }
-                            },
+                            label: 'Reset',
+                            onPressed: _resetPassword,
                           ),
                           SizedBox(height: 3),
                           Text(
                             error,
                             style: TextStyle(color: Colors.red, fontSize: 16.0),
                           ),
-                          SizedBox(height: 3),
                           TextButton(
                             onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (context) => ForgotPasswordPage()),
-                              );
+                              Navigator.pop(context);
                             },
                             child: Text(
-                              "Forgot password?",
-                              style:
-                                  TextStyle(color: Colors.green, fontSize: 16),
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (context) => RegisterPage()),
-                              );
-                            },
-                            child: Text(
-                              "Don't have an account? Sign up",
+                              "Back to Login",
                               style:
                                   TextStyle(color: Colors.green, fontSize: 16),
                             ),
@@ -132,9 +112,7 @@ class _LoginPageState extends State<LoginPage> {
                               height: 250,
                             ),
                           ),
-                          SizedBox(
-                            height: 12.0,
-                          ),
+                          SizedBox(height: 12.0),
                         ],
                       ),
                     ),
