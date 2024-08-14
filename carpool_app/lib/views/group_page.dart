@@ -97,6 +97,9 @@ class _GroupPageState extends State<GroupPage> {
                               widget.group.secondMeetingPoint),
                           _buildMeetingPoint('Third Meeting Point',
                               widget.group.thirdMeetingPoint),
+                          SizedBox(height: 20),
+                          _buildChangePickupPointDropdown(),
+                          SizedBox(height: 20),
                           _buildTimesSection(widget.group.times),
                           SizedBox(height: 20),
                           _buildMembersAndPointsHeader(),
@@ -123,39 +126,34 @@ class _GroupPageState extends State<GroupPage> {
                                 if (status == 'started') {
                                   String currentDriver =
                                       groupData['nextDriver'];
-                                  return FutureBuilder<bool>(
-                                    future: _canEndDriveToday(),
-                                    builder: (context, endDriveSnapshot) {
-                                      if (endDriveSnapshot.connectionState ==
-                                          ConnectionState.waiting) {
-                                        return CircularProgressIndicator();
-                                      } else if (endDriveSnapshot.hasError) {
-                                        return Text('Error');
-                                      } else if (endDriveSnapshot.data! &&
-                                          currentDriver ==
-                                              widget.currentUserId) {
-                                        return _buildEndDriveButton(
-                                            context, currentDriver);
-                                      } else if (endDriveSnapshot.data! &&
-                                          currentDriver !=
-                                              widget.currentUserId) {
-                                        return Text(
-                                            'The driver is on their way.',
-                                            style:
-                                                TextStyle(color: Colors.green));
-                                      } else if (currentDriver ==
-                                          widget.currentUserId) {
-                                        return Text(
-                                          'You can end the drive 10 minutes before the return time or until midnight.',
-                                          style: TextStyle(color: Colors.red),
-                                        );
-                                      } else {
-                                        return Text(
-                                            'The driver is on their way.',
-                                            style:
-                                                TextStyle(color: Colors.green));
-                                      }
-                                    },
+                                  return Column(
+                                    children: [
+                                      _buildDriverInfo(currentDriver),
+                                      SizedBox(height: 20),
+                                      if (currentDriver == widget.currentUserId)
+                                        FutureBuilder<bool>(
+                                          future: _canEndDriveToday(),
+                                          builder: (context, endDriveSnapshot) {
+                                            if (endDriveSnapshot
+                                                    .connectionState ==
+                                                ConnectionState.waiting) {
+                                              return CircularProgressIndicator();
+                                            } else if (endDriveSnapshot
+                                                .hasError) {
+                                              return Text('Error');
+                                            } else if (endDriveSnapshot.data!) {
+                                              return _buildEndDriveButton(
+                                                  context, currentDriver);
+                                            } else {
+                                              return Text(
+                                                'You can end the drive 10 minutes before the return time or until midnight.',
+                                                style: TextStyle(
+                                                    color: Colors.red),
+                                              );
+                                            }
+                                          },
+                                        ),
+                                    ],
                                   );
                                 } else {
                                   return FutureBuilder<String>(
@@ -288,6 +286,117 @@ class _GroupPageState extends State<GroupPage> {
         ),
       ),
     );
+  }
+
+  String? _selectedPickupPoint;
+
+  Widget _buildChangePickupPointDropdown() {
+    List<String> pickupPoints = [
+      widget.group.firstMeetingPoint,
+      if (widget.group.secondMeetingPoint.isNotEmpty)
+        widget.group.secondMeetingPoint,
+      if (widget.group.thirdMeetingPoint.isNotEmpty)
+        widget.group.thirdMeetingPoint,
+    ];
+
+    // Get the current pickup point of the user from the group data
+    String currentPickupPoint =
+        widget.group.pickupPoints?[widget.currentUserId] ?? "Not set";
+
+    return StatefulBuilder(
+      builder: (context, setState) {
+        return Row(
+          children: [
+            // Display the current pickup point
+            Expanded(
+              flex: 1,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Your current pickup point:',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    currentPickupPoint,
+                    style: TextStyle(fontSize: 16, color: Colors.black),
+                  ),
+                ],
+              ),
+            ),
+            // Dropdown button to change pickup point
+            Expanded(
+              flex: 1,
+              child: DropdownButtonFormField<String>(
+                decoration: InputDecoration(
+                  labelText: 'Change',
+                  border: OutlineInputBorder(),
+                ),
+                value: _selectedPickupPoint,
+                items: pickupPoints.map((String point) {
+                  return DropdownMenuItem<String>(
+                    value: point,
+                    child: Text(point),
+                  );
+                }).toList(),
+                onChanged: (String? newValue) async {
+                  if (newValue != null) {
+                    setState(() {
+                      _selectedPickupPoint = newValue;
+                    });
+                    await _updatePickupPointInDB(newValue);
+                    // Update the current pickup point display
+                    setState(() {
+                      currentPickupPoint = newValue;
+                    });
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                            'Pickup point updated to $newValue successfully!'),
+                      ),
+                    );
+                  }
+                },
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _updatePickupPointInDB(String selectedPickupPoint) async {
+    try {
+      // Update the pickup point in the Firestore database
+      await FirebaseFirestore.instance
+          .collection('groups')
+          .doc(widget.group.uid)
+          .update({
+        'pickupPoints.${widget.currentUserId}': selectedPickupPoint,
+      });
+
+      // Send a notification to the user about the updated pickup point
+      await sendNotification(
+        title: 'Pickup Point Updated',
+        body: 'Your pickup point has been updated to $selectedPickupPoint.',
+        userId: widget.currentUserId,
+      );
+
+      // show a success message here or handle any additional logic
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Pickup point updated successfully!'),
+        ),
+      );
+    } catch (e) {
+      // Handle any errors that might occur during the update
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to update pickup point: $e'),
+        ),
+      );
+    }
   }
 
   Widget _buildSectionTitle(String title) {
@@ -757,7 +866,7 @@ class _GroupPageState extends State<GroupPage> {
                   IconButton(
                     icon: Icon(Icons.info),
                     onPressed: _showRouteDialog,
-                  ), // Add this IconButton
+                  ),
                 ],
               ),
             ],
@@ -1056,11 +1165,8 @@ class _GroupPageState extends State<GroupPage> {
 
   Widget _buildStyledRoutePoint(String title, String point,
       Map<String, List<Map<String, String>>> details) {
-    if (point.isEmpty) {
-      return SizedBox.shrink();
-    }
-
     List<Map<String, String>> users = details[point] ?? [];
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Column(
@@ -1068,14 +1174,14 @@ class _GroupPageState extends State<GroupPage> {
         children: [
           Container(
             decoration: BoxDecoration(
-              color: Colors.green[100],
+              color: Colors.grey.shade800,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.green, width: 2),
+              border: Border.all(color: Colors.greenAccent, width: 2),
             ),
             padding: EdgeInsets.all(12.0),
             child: Row(
               children: [
-                Icon(Icons.location_pin, color: Colors.red, size: 30),
+                Icon(Icons.location_pin, color: Colors.greenAccent, size: 30),
                 SizedBox(width: 10),
                 Expanded(
                   child: Column(
@@ -1086,14 +1192,14 @@ class _GroupPageState extends State<GroupPage> {
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: Colors.green[800],
+                          color: Colors.white,
                         ),
                       ),
                       Text(
                         point,
                         style: TextStyle(
                           fontSize: 16,
-                          color: Colors.grey[800],
+                          color: Colors.grey.shade400,
                         ),
                       ),
                     ],
@@ -1103,28 +1209,43 @@ class _GroupPageState extends State<GroupPage> {
             ),
           ),
           SizedBox(height: 10),
-          ...users.map((user) => Card(
-                color: Colors.blue[50],
-                margin: EdgeInsets.symmetric(vertical: 4.0),
-                child: ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: Colors.blue[100],
-                    child: Icon(Icons.person, color: Colors.blue[800]),
+          ...users.map((user) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4.0),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade700,
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  title: Text(
-                    user['name']!,
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.black,
-                    ),
-                  ),
-                  subtitle: Text(
-                    'Phone: ${user['phone']}',
-                    style: TextStyle(fontSize: 14),
-                  ),
-                  trailing: IconButton(
-                    icon: Icon(Icons.call, color: Colors.green),
-                    onPressed: () => _makePhoneCall(user['phone']!),
+                  padding: EdgeInsets.all(10.0),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              user['name']!,
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            Text(
+                              'Phone: ${user['phone']}',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey.shade400,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.call, color: Colors.greenAccent),
+                        onPressed: () => _makePhoneCall(user['phone']!),
+                      ),
+                    ],
                   ),
                 ),
               )),

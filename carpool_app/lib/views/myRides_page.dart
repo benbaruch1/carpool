@@ -216,12 +216,8 @@ class _MyRidesPageState extends State<MyRidesPage> {
         Text(
           meetingPoints[i],
           style: TextStyle(
-            color: meetingPoints[i] == userMeetingPoint
-                ? Colors.red
-                : Colors.black,
-            fontWeight: meetingPoints[i] == userMeetingPoint
-                ? FontWeight.bold
-                : FontWeight.normal,
+            color: Colors.black,
+            fontWeight: FontWeight.normal,
           ),
         ),
       );
