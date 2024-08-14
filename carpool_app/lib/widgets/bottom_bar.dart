@@ -15,8 +15,6 @@ class BottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final String currentUserId = FirebaseAuth.instance.currentUser!.uid;
-
     return Container(
       margin: EdgeInsets.only(bottom: 10, left: 20, right: 20),
       decoration: BoxDecoration(
@@ -38,7 +36,8 @@ class BottomBar extends StatelessWidget {
               label: 'My Rides',
             ),
             BottomNavigationBarItem(
-              icon: _buildNotificationIcon(currentUserId),
+              icon: _buildNotificationIcon(
+                  FirebaseAuth.instance.currentUser?.uid ?? ''),
               label: 'Notifications',
             ),
             BottomNavigationBarItem(
@@ -55,26 +54,39 @@ class BottomBar extends StatelessWidget {
           onTap: (index) {
             print("[LOG1] Navigating to page with index: $index");
             onItemTapped(index);
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) {
-                switch (index) {
-                  case 0:
-                    return HomePage();
-                  case 1:
-                    return MyRidesPage();
-                  case 2:
-                    return NotificationPage();
-                  case 3:
-                    return ProfilePage();
-                  default:
-                    return HomePage();
-                }
-              }),
-            );
+            _navigateToPage(context, index);
           },
           type: BottomNavigationBarType.fixed,
         ),
+      ),
+    );
+  }
+
+  void _navigateToPage(BuildContext context, int index) {
+    Widget page;
+    switch (index) {
+      case 0:
+        page = HomePage();
+        break;
+      case 1:
+        page = MyRidesPage();
+        break;
+      case 2:
+        page = NotificationPage();
+        break;
+      case 3:
+        page = ProfilePage();
+        break;
+      default:
+        page = HomePage();
+    }
+
+    Navigator.pushReplacement(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (context, animation1, animation2) => page,
+        transitionDuration: Duration.zero,
+        reverseTransitionDuration: Duration.zero,
       ),
     );
   }
