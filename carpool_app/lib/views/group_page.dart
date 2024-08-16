@@ -105,8 +105,7 @@ class _GroupPageState extends State<GroupPage> {
                           _buildMembersAndPointsHeader(),
                           _buildMembersList(
                               widget.group.members, widget.group.userId),
-                          SizedBox(height: 20),
-                          _buildVotingSystem(),
+                          _buildReportIcon(),
                           SizedBox(height: 10),
                           FutureBuilder<DocumentSnapshot>(
                             future: FirebaseFirestore.instance
@@ -1431,6 +1430,48 @@ class _GroupPageState extends State<GroupPage> {
     }
   }
 
+  //Function to send a notification when a user leaves the group
+  Future<void> notifyGroupForUserLeaving(
+      Map<String, dynamic> groupData, String userIdToRemove) async {
+    DocumentSnapshot userSnapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(userIdToRemove)
+        .get();
+    String userName =
+        (userSnapshot.data() as Map<String, dynamic>)['firstName'];
+
+    List<String> userIds = List<String>.from(groupData['members'])
+        .where((userId) => userId != userIdToRemove)
+        .toList();
+
+    await sendNotificationToGroupMembers(
+      title: '$userName has left the group',
+      body: '$userName has left the group ${widget.group.rideName}.',
+      userIds: userIds,
+    );
+  }
+
+  Future<void> notifyGroupForUserRemoval(
+      Group group, String removedUserId) async {
+    //Fetching the removed user's name
+    DocumentSnapshot userSnapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(removedUserId)
+        .get();
+    String removedUserName =
+        (userSnapshot.data() as Map<String, dynamic>)['firstName'];
+
+    // Sending a notification to all other group members
+    List<String> userIds =
+        group.members.where((userId) => userId != removedUserId).toList();
+    await sendNotificationToGroupMembers(
+      title: 'Member removed from the group',
+      body:
+          '$removedUserName has been removed from the group ${group.rideName}.',
+      userIds: userIds,
+    );
+  }
+
   Future<List<LatLng>> getLatLngFromAddresses(List<String> addresses) async {
     List<LatLng> latLngList = [];
     for (String address in addresses) {
@@ -1683,6 +1724,14 @@ class _GroupPageState extends State<GroupPage> {
         'selectedForKick': FieldValue.delete(),
         'voting': FieldValue.delete(),
       });
+      // Sending a notification to the user who was removed from the group
+      await sendNotification(
+        title: 'You were removed from the group',
+        body: 'You have been removed from the group ${widget.group.rideName}.',
+        userId: memberId,
+      );
+      // Sending a notification to all other group members that the user was removed
+      await notifyGroupForUserRemoval(widget.group, memberId);
     }
 
     // If all members have voted, reset the voting state
@@ -1695,6 +1744,7 @@ class _GroupPageState extends State<GroupPage> {
         'voting': FieldValue.delete(),
       });
     }
+    Navigator.pop(context, true);
   }
 
   Widget _buildVoteResults(
@@ -1720,5 +1770,47 @@ class _GroupPageState extends State<GroupPage> {
             ],
           )
         : SizedBox.shrink();
+  }
+
+  Widget _buildReportIcon() {
+    return Row(
+      children: [
+        IconButton(
+          icon: Icon(Icons.report, color: Colors.red, size: 20),
+          padding: EdgeInsets.all(0),
+          onPressed: () {
+            _showVotingSystemPopup(
+                context); //Opening the Popup window when clicking the icon
+          },
+        ),
+        Text(
+          'Report',
+          style: TextStyle(
+              fontSize: 14, fontWeight: FontWeight.bold, color: Colors.red),
+        ),
+      ],
+    );
+  }
+
+  void _showVotingSystemPopup(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Kick Voting System'),
+          content: SingleChildScrollView(
+            child: _buildVotingSystem(), //The voting system
+          ),
+          actions: [
+            TextButton(
+              child: Text('Close'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 }
