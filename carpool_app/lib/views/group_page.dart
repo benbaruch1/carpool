@@ -526,7 +526,6 @@ class _GroupPageState extends State<GroupPage> {
                 margin: const EdgeInsets.symmetric(vertical: 4.0),
                 child: Row(
                   children: [
-                    if (isCreator) Text('(Creator) '),
                     Expanded(
                       flex: 2,
                       child: FutureBuilder<DocumentSnapshot>(
@@ -1105,7 +1104,7 @@ class _GroupPageState extends State<GroupPage> {
                 children: [
                   Icon(Icons.directions_car, color: Colors.green),
                   SizedBox(width: 10),
-                  Text("Ride Started", style: TextStyle(color: Colors.green)),
+                  Text("Route details", style: TextStyle(color: Colors.green)),
                 ],
               ),
               content: SingleChildScrollView(
@@ -1171,6 +1170,11 @@ class _GroupPageState extends State<GroupPage> {
       Map<String, List<Map<String, String>>> details) {
     List<Map<String, String>> users = details[point] ?? [];
 
+    // If no users are assigned to this point, do not display it
+    if (users.isEmpty) {
+      return SizedBox.shrink();
+    }
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Column(
@@ -1178,14 +1182,16 @@ class _GroupPageState extends State<GroupPage> {
         children: [
           Container(
             decoration: BoxDecoration(
-              color: Colors.grey.shade800,
+              color: Colors.grey[200],
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.greenAccent, width: 2),
+              border: Border.all(
+                  color: Colors.grey[300] ?? Colors.grey,
+                  width: 1), // Provides a fallback
             ),
-            padding: EdgeInsets.all(12.0),
+            padding: EdgeInsets.all(10.0),
             child: Row(
               children: [
-                Icon(Icons.location_pin, color: Colors.greenAccent, size: 30),
+                Icon(Icons.location_on, color: Colors.green, size: 24),
                 SizedBox(width: 10),
                 Expanded(
                   child: Column(
@@ -1194,16 +1200,16 @@ class _GroupPageState extends State<GroupPage> {
                       Text(
                         title,
                         style: TextStyle(
-                          fontSize: 18,
+                          fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: Colors.black87,
                         ),
                       ),
                       Text(
                         point,
                         style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey.shade400,
+                          fontSize: 14,
+                          color: Colors.black54,
                         ),
                       ),
                     ],
@@ -1213,11 +1219,12 @@ class _GroupPageState extends State<GroupPage> {
             ),
           ),
           SizedBox(height: 10),
+          //Display the users relevant to this point within the box
           ...users.map((user) => Padding(
                 padding: const EdgeInsets.symmetric(vertical: 4.0),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade700,
+                    color: Colors.grey[100],
                     borderRadius: BorderRadius.circular(8),
                   ),
                   padding: EdgeInsets.all(10.0),
@@ -1230,23 +1237,23 @@ class _GroupPageState extends State<GroupPage> {
                             Text(
                               user['name']!,
                               style: TextStyle(
-                                fontSize: 16,
+                                fontSize: 14,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.white,
+                                color: Colors.black87,
                               ),
                             ),
                             Text(
                               'Phone: ${user['phone']}',
                               style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey.shade400,
+                                fontSize: 12,
+                                color: Colors.black54,
                               ),
                             ),
                           ],
                         ),
                       ),
                       IconButton(
-                        icon: Icon(Icons.call, color: Colors.greenAccent),
+                        icon: Icon(Icons.call, color: Colors.green),
                         onPressed: () => _makePhoneCall(user['phone']!),
                       ),
                     ],
@@ -1255,67 +1262,6 @@ class _GroupPageState extends State<GroupPage> {
               )),
         ],
       ),
-    );
-  }
-
-  Widget _buildStyledMeetingPoint(String title, String point,
-      Map<String, List<Map<String, String>>> details) {
-    List<Map<String, String>> users = details[point] ?? [];
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: EdgeInsets.all(8.0),
-          decoration: BoxDecoration(
-            color: Colors.green.shade100,
-            border: Border.all(color: Colors.green, width: 2.0),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Row(
-            children: [
-              Icon(Icons.location_on, color: Colors.red),
-              SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green.shade700,
-                      ),
-                    ),
-                    Text(
-                      point,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey[800],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        SizedBox(height: 10),
-        ...users.map((user) => ListTile(
-              leading: Icon(Icons.person, color: Colors.blue),
-              title: Text(
-                user['name']!,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.black,
-                ),
-              ),
-              trailing: IconButton(
-                icon: Icon(Icons.call, color: Colors.green),
-                onPressed: () => _makePhoneCall(user['phone']!),
-              ),
-            )),
-      ],
     );
   }
 
@@ -1552,7 +1498,6 @@ class _GroupPageState extends State<GroupPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SizedBox(height: 20),
-            _buildSectionTitle('Voting System'),
             if (selectedMember == null)
               Column(
                 children: [

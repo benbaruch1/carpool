@@ -10,22 +10,23 @@ class Group {
   final String userId;
   final Map<String, int> memberPoints; // points
   final Map<String, String>? pickupPoints;
+  final String status;
   int availableSeats;
 
-  Group({
-    required this.uid,
-    required this.firstMeetingPoint,
-    required this.secondMeetingPoint,
-    required this.thirdMeetingPoint,
-    required this.members,
-    required this.rideName,
-    required this.times,
-    required this.selectedDays,
-    required this.userId,
-    required this.memberPoints,
-    required this.availableSeats,
-    this.pickupPoints,
-  });
+  Group(
+      {required this.uid,
+      required this.firstMeetingPoint,
+      required this.secondMeetingPoint,
+      required this.thirdMeetingPoint,
+      required this.members,
+      required this.rideName,
+      required this.times,
+      required this.selectedDays,
+      required this.userId,
+      required this.memberPoints,
+      required this.availableSeats,
+      this.pickupPoints,
+      required this.status});
 
   factory Group.fromMap(Map<String, dynamic> data, String id) {
     return Group(
@@ -41,6 +42,7 @@ class Group {
       memberPoints: Map<String, int>.from(data['memberPoints'] ?? {}),
       availableSeats: data['availableSeats'] ?? 5,
       pickupPoints: Map<String, String>.from(data['pickupPoints'] ?? {}),
+      status: data['status'] ?? 'not started',
     );
   }
 
