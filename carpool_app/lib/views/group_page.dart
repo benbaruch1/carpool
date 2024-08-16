@@ -316,24 +316,39 @@ class _GroupPageState extends State<GroupPage> {
                 children: [
                   Text(
                     'Your current pickup point:',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                   ),
                   SizedBox(height: 8),
                   Text(
                     currentPickupPoint,
-                    style: TextStyle(fontSize: 16, color: Colors.black),
+                    style: TextStyle(fontSize: 14, color: Colors.black),
                   ),
                 ],
               ),
             ),
+            SizedBox(width: 20), // Add space between text and dropdown
             // Dropdown button to change pickup point
             Expanded(
               flex: 1,
               child: DropdownButtonFormField<String>(
                 decoration: InputDecoration(
-                  labelText: 'Change',
-                  border: OutlineInputBorder(),
+                  isDense: true,
+                  contentPadding:
+                      EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: Colors.green, width: 2),
+                  ),
                 ),
+                hint: Text('Change', style: TextStyle(color: Colors.grey[600])),
                 value: _selectedPickupPoint,
                 items: pickupPoints.map((String point) {
                   return DropdownMenuItem<String>(

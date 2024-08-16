@@ -1,4 +1,5 @@
 import 'package:carpool_app/services/database.dart';
+import 'package:carpool_app/shared/loading.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -13,31 +14,19 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   final _formKey = GlobalKey<FormState>();
-  TextEditingController _nameController = TextEditingController();
-  TextEditingController _addressController = TextEditingController();
-  TextEditingController _phoneNumberController = TextEditingController();
-  TextEditingController _emailController = TextEditingController();
-  int _availableSeats = 5; // Default value
   int _selectedIndex = 3;
-
   String error = '';
 
-  Future<void> _fetchUserData() async {
+  Future<Map<String, dynamic>> _fetchUserData() async {
     var user = FirebaseAuth.instance.currentUser;
     var snapshot = await FirebaseFirestore.instance
         .collection('users')
         .doc(user!.uid)
         .get();
     if (snapshot.exists) {
-      var data = snapshot.data()!;
-      setState(() {
-        _emailController.text = data['email'] ?? '';
-        _nameController.text = data['firstName'] ?? '';
-        _addressController.text = data['address'] ?? '';
-        _phoneNumberController.text = data['phoneNumber'] ?? '';
-        _availableSeats = data['availableSeats'] ?? 5;
-      });
+      return snapshot.data()!;
     }
+    return {};
   }
 
   void _onItemTapped(int index) {
@@ -47,151 +36,24 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   @override
-  void initState() {
-    super.initState();
-    _fetchUserData();
-  }
-
-  @override
   Widget build(BuildContext context) {
     print("[LOG] my profile opened ");
     return Scaffold(
       appBar: TopBar(title: 'My Profile', showBackButton: false),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [const Color.fromARGB(0, 165, 214, 167), Colors.white],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
-        child: Center(
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      'Edit profile',
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                      ),
-                    ),
-                    SizedBox(height: 20),
-                    Text(
-                      'Personal info',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green,
-                      ),
-                    ),
-                    SizedBox(height: 10),
-                    TextFormField(
-                      controller: _emailController,
-                      enabled: false,
-                      decoration: InputDecoration(
-                        labelText: 'Email',
-                        fillColor: Colors.grey.shade300,
-                        filled: true,
-                      ),
-                    ),
-                    SizedBox(height: 10),
-                    TextFormField(
-                      controller: _nameController,
-                      decoration: InputDecoration(
-                        labelText: 'Name',
-                      ),
-                    ),
-                    SizedBox(height: 10),
-                    TextFormField(
-                      controller: _phoneNumberController,
-                      decoration: InputDecoration(
-                        labelText: 'Phone Number',
-                      ),
-                    ),
-                    SizedBox(height: 10),
-                    TextFormField(
-                      controller: _addressController,
-                      decoration: InputDecoration(
-                        labelText: 'Address',
-                      ),
-                    ),
-                    SizedBox(height: 10),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: DropdownButtonFormField<int>(
-                            value: _availableSeats,
-                            decoration: InputDecoration(
-                              labelText: 'Available Seats',
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10),
-                                borderSide: BorderSide(color: Colors.green),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10),
-                                borderSide: BorderSide(color: Colors.green),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10),
-                                borderSide: BorderSide(color: Colors.green),
-                              ),
-                              filled: true,
-                              fillColor: const Color.fromARGB(0, 255, 255, 255),
-                            ),
-                            items: [1, 2, 3, 4, 5].map((int value) {
-                              return DropdownMenuItem<int>(
-                                value: value,
-                                child: Text(value.toString()),
-                              );
-                            }).toList(),
-                            onChanged: (val) {
-                              setState(() {
-                                _availableSeats = val!;
-                              });
-                            },
-                            validator: (val) => val == null
-                                ? 'Select the number of available seats'
-                                : null,
-                          ),
-                        ),
-                        IconButton(
-                          icon: Icon(Icons.info, color: Colors.green),
-                          onPressed: _showInfoDialog,
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 20),
-                    Center(
-                      child: CustomButton(
-                        label: 'Update',
-                        onPressed: () async {
-                          if (_formKey.currentState!.validate()) {
-                            bool canUpdate = await _checkGroupsForSeats();
-                            if (canUpdate) {
-                              _updateProfile();
-                            }
-                          }
-                        },
-                      ),
-                    ),
-                    SizedBox(height: 12),
-                    Text(
-                      error,
-                      style: TextStyle(color: Colors.red, fontSize: 14),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
+      body: FutureBuilder<Map<String, dynamic>>(
+        future: _fetchUserData(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Loading();
+          } else if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return Center(child: Text('No user data found'));
+          }
+
+          var userData = snapshot.data!;
+          return _buildProfileForm(userData);
+        },
       ),
       bottomNavigationBar: BottomBar(
         selectedIndex: _selectedIndex,
@@ -200,7 +62,162 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Future<bool> _checkGroupsForSeats() async {
+  Widget _buildProfileForm(Map<String, dynamic> userData) {
+    TextEditingController _nameController =
+        TextEditingController(text: userData['firstName'] ?? '');
+    TextEditingController _addressController =
+        TextEditingController(text: userData['address'] ?? '');
+    TextEditingController _phoneNumberController =
+        TextEditingController(text: userData['phoneNumber'] ?? '');
+    TextEditingController _emailController =
+        TextEditingController(text: userData['email'] ?? '');
+    int _availableSeats = userData['availableSeats'] ?? 5;
+
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [const Color.fromARGB(0, 165, 214, 167), Colors.white],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+      ),
+      child: Center(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    'Edit profile',
+                    style: TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  SizedBox(height: 20),
+                  Text(
+                    'Personal info',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green,
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  TextFormField(
+                    controller: _emailController,
+                    enabled: false,
+                    decoration: InputDecoration(
+                      labelText: 'Email',
+                      fillColor: Colors.grey.shade300,
+                      filled: true,
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  TextFormField(
+                    controller: _nameController,
+                    decoration: InputDecoration(
+                      labelText: 'Name',
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  TextFormField(
+                    controller: _phoneNumberController,
+                    decoration: InputDecoration(
+                      labelText: 'Phone Number',
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  TextFormField(
+                    controller: _addressController,
+                    decoration: InputDecoration(
+                      labelText: 'Address',
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: DropdownButtonFormField<int>(
+                          value: _availableSeats,
+                          decoration: InputDecoration(
+                            labelText: 'Available Seats',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: BorderSide(color: Colors.green),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: BorderSide(color: Colors.green),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: BorderSide(color: Colors.green),
+                            ),
+                            filled: true,
+                            fillColor: const Color.fromARGB(0, 255, 255, 255),
+                          ),
+                          items: [1, 2, 3, 4, 5].map((int value) {
+                            return DropdownMenuItem<int>(
+                              value: value,
+                              child: Text(value.toString()),
+                            );
+                          }).toList(),
+                          onChanged: (val) {
+                            setState(() {
+                              _availableSeats = val!;
+                            });
+                          },
+                          validator: (val) => val == null
+                              ? 'Select the number of available seats'
+                              : null,
+                        ),
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.info, color: Colors.green),
+                        onPressed: _showInfoDialog,
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 20),
+                  Center(
+                    child: CustomButton(
+                      label: 'Update',
+                      onPressed: () async {
+                        if (_formKey.currentState!.validate()) {
+                          bool canUpdate =
+                              await _checkGroupsForSeats(_availableSeats);
+                          if (canUpdate) {
+                            _updateProfile(
+                              _nameController.text,
+                              _phoneNumberController.text,
+                              _addressController.text,
+                              _availableSeats,
+                            );
+                          }
+                        }
+                      },
+                    ),
+                  ),
+                  SizedBox(height: 12),
+                  Text(
+                    error,
+                    style: TextStyle(color: Colors.red, fontSize: 14),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<bool> _checkGroupsForSeats(int newAvailableSeats) async {
     final user = FirebaseAuth.instance.currentUser;
     final userSnapshot = await FirebaseFirestore.instance
         .collection('users')
@@ -221,7 +238,7 @@ class _ProfilePageState extends State<ProfilePage> {
           .get();
       if (groupSnapshot.exists) {
         var groupData = groupSnapshot.data() as Map<String, dynamic>;
-        if (groupData['availableSeats'] > _availableSeats) {
+        if (groupData['availableSeats'] > newAvailableSeats) {
           problematicGroups.add(groupData['rideName']);
         }
       }
@@ -261,15 +278,12 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  void _updateProfile() {
+  void _updateProfile(
+      String name, String phoneNumber, String address, int availableSeats) {
     final user = FirebaseAuth.instance.currentUser;
     DatabaseService databaseService = DatabaseService(user!.uid);
     databaseService
-        .updateExistingUserData(
-            _nameController.text,
-            _phoneNumberController.text,
-            _addressController.text,
-            _availableSeats)
+        .updateExistingUserData(name, phoneNumber, address, availableSeats)
         .then((_) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -278,6 +292,10 @@ class _ProfilePageState extends State<ProfilePage> {
           backgroundColor: Colors.lightGreen,
         ),
       );
+    }).catchError((error) {
+      setState(() {
+        this.error = 'Failed to update profile: $error';
+      });
     });
   }
 
