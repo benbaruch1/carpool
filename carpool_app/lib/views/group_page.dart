@@ -106,6 +106,8 @@ class _GroupPageState extends State<GroupPage> {
                           _buildMembersList(
                               widget.group.members, widget.group.userId),
                           SizedBox(height: 20),
+                          _buildVotingSystem(),
+                          SizedBox(height: 10),
                           FutureBuilder<DocumentSnapshot>(
                             future: FirebaseFirestore.instance
                                 .collection('groups')
@@ -589,7 +591,9 @@ class _GroupPageState extends State<GroupPage> {
     );
   }
 
-  Future<void> _leaveGroup(BuildContext context) async {
+  Future<void> _leaveGroup(BuildContext context, [String? memberId]) async {
+    String userIdToRemove = memberId ?? widget.currentUserId;
+
     try {
       DocumentSnapshot groupSnapshot = await FirebaseFirestore.instance
           .collection('groups')
@@ -601,8 +605,8 @@ class _GroupPageState extends State<GroupPage> {
             groupSnapshot.data() as Map<String, dynamic>;
 
         List<dynamic> members = List<String>.from(groupData['members']);
-        bool isDriver = groupData['nextDriver'] == widget.currentUserId;
-        bool isCreator = groupData['userId'] == widget.currentUserId;
+        bool isDriver = groupData['nextDriver'] == userIdToRemove;
+        bool isCreator = groupData['userId'] == userIdToRemove;
 
         if (members.length == 1) {
           // Delete the entire group if there's only one member
@@ -620,14 +624,15 @@ class _GroupPageState extends State<GroupPage> {
               .collection('groups')
               .doc(widget.group.uid)
               .update({
-            'members': FieldValue.arrayRemove([widget.currentUserId]),
-            'memberPoints.${widget.currentUserId}': FieldValue.delete(),
+            'members': FieldValue.arrayRemove([userIdToRemove]),
+            'memberPoints.$userIdToRemove': FieldValue.delete(),
           });
 
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('You have left the group')),
-          );
-
+          if (userIdToRemove == widget.currentUserId) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('You have left the group')),
+            );
+          }
           //after the current user leave the group
           if (members.length == 2) {
             //if there only 1 member left
@@ -664,7 +669,7 @@ class _GroupPageState extends State<GroupPage> {
         }
         await FirebaseFirestore.instance
             .collection('users')
-            .doc(widget.currentUserId)
+            .doc(userIdToRemove)
             .update({
           'groups': FieldValue.arrayRemove([widget.group.uid]),
         });
@@ -672,7 +677,7 @@ class _GroupPageState extends State<GroupPage> {
         sendNotification(
           title: 'You have left the group ' + widget.group.rideName,
           body: 'You have successfully left the group ' + widget.group.rideName,
-          userId: widget.currentUserId,
+          userId: userIdToRemove,
         );
 
         Navigator.pop(context, true);
@@ -1482,5 +1487,238 @@ class _GroupPageState extends State<GroupPage> {
         );
       },
     );
+  }
+
+  Widget _buildVotingSystem() {
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('groups')
+          .doc(widget.group.uid)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return CircularProgressIndicator();
+        } else if (snapshot.hasError) {
+          return Text('Error loading voting data');
+        }
+
+        var groupData = snapshot.data!.data() as Map<String, dynamic>;
+        Map<String, dynamic> votingData = groupData['voting'] ?? {};
+
+        String? selectedMember = groupData['selectedForKick'];
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(height: 20),
+            _buildSectionTitle('Voting System'),
+            if (selectedMember == null)
+              Column(
+                children: [
+                  Text(
+                    'Vote to kick a member:',
+                    style: TextStyle(fontSize: 16),
+                  ),
+                  SizedBox(height: 10),
+                  _buildMemberDropdown(votingData),
+                ],
+              )
+            else
+              _buildVotingOptions(selectedMember, votingData),
+            SizedBox(height: 20),
+            _buildVoteResults(votingData, selectedMember),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildMemberDropdown(Map<String, dynamic> votingData) {
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: _getMemberNames(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return CircularProgressIndicator();
+        } else if (snapshot.hasError) {
+          return Text('Error fetching members');
+        }
+
+        var members = snapshot.data ?? [];
+        return DropdownButtonFormField<String>(
+          decoration: InputDecoration(
+            labelText: 'Select a member',
+            border: OutlineInputBorder(),
+          ),
+          items: members.map((member) {
+            return DropdownMenuItem<String>(
+              value: member['id'],
+              child: Text(member['name']),
+            );
+          }).toList(),
+          onChanged: (String? selectedMemberId) async {
+            if (selectedMemberId != null) {
+              await _initiateVote(selectedMemberId);
+            }
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _initiateVote(String selectedMemberId) async {
+    await FirebaseFirestore.instance
+        .collection('groups')
+        .doc(widget.group.uid)
+        .update({
+      'selectedForKick': selectedMemberId,
+    });
+  }
+
+  Future<List<Map<String, dynamic>>> _getMemberNames() async {
+    List<Map<String, dynamic>> memberNames = [];
+    for (String memberId in widget.group.members) {
+      var userSnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(memberId)
+          .get();
+      if (userSnapshot.exists) {
+        var userData = userSnapshot.data() as Map<String, dynamic>;
+        memberNames.add({'id': memberId, 'name': userData['firstName']});
+      }
+    }
+    return memberNames;
+  }
+
+  Widget _buildVotingOptions(
+      String selectedMember, Map<String, dynamic> votingData) {
+    return FutureBuilder<DocumentSnapshot>(
+      future: FirebaseFirestore.instance
+          .collection('users')
+          .doc(selectedMember)
+          .get(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return CircularProgressIndicator();
+        } else if (snapshot.hasError) {
+          return Text('Error fetching user info');
+        }
+
+        var userData = snapshot.data!.data() as Map<String, dynamic>;
+        String memberName = userData['firstName'];
+
+        return Column(
+          children: [
+            Text('Vote to kick $memberName:'),
+            SizedBox(height: 10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ElevatedButton(
+                  onPressed: () => _castVote(selectedMember, true),
+                  child: Text('Yes'),
+                  style:
+                      ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                ),
+                SizedBox(width: 20),
+                ElevatedButton(
+                  onPressed: () => _castVote(selectedMember, false),
+                  child: Text('No'),
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _castVote(String memberId, bool voteYes) async {
+    // Check if the current user is part of the group's members
+    if (!widget.group.members.contains(widget.currentUserId)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content:
+                Text('You are not a member of this group and cannot vote.')),
+      );
+      return; // Exit the function early if the user is not a member
+    }
+
+    try {
+      // Proceed with the voting process
+      await FirebaseFirestore.instance
+          .collection('groups')
+          .doc(widget.group.uid)
+          .update({
+        'voting.${widget.currentUserId}': voteYes ? 'yes' : 'no',
+      });
+
+      _checkForKickOutcome(memberId);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to cast vote: $e')),
+      );
+    }
+  }
+
+  void _checkForKickOutcome(String memberId) async {
+    var groupSnapshot = await FirebaseFirestore.instance
+        .collection('groups')
+        .doc(widget.group.uid)
+        .get();
+    var groupData = groupSnapshot.data() as Map<String, dynamic>;
+
+    Map<String, dynamic> votingData = groupData['voting'] ?? {};
+    int yesVotes = votingData.values.where((vote) => vote == 'yes').length;
+
+    // Check if a majority has voted "yes"
+    if (yesVotes > widget.group.members.length / 2) {
+      // Kick the member if majority agrees
+      await _leaveGroup(context, memberId);
+      //reset the voting
+      await FirebaseFirestore.instance
+          .collection('groups')
+          .doc(widget.group.uid)
+          .update({
+        'selectedForKick': FieldValue.delete(),
+        'voting': FieldValue.delete(),
+      });
+    }
+
+    // If all members have voted, reset the voting state
+    if (votingData.length == widget.group.members.length) {
+      await FirebaseFirestore.instance
+          .collection('groups')
+          .doc(widget.group.uid)
+          .update({
+        'selectedForKick': FieldValue.delete(),
+        'voting': FieldValue.delete(),
+      });
+    }
+  }
+
+  Widget _buildVoteResults(
+      Map<String, dynamic> votingData, String? selectedMember) {
+    int yesVotes = votingData.values.where((vote) => vote == 'yes').length;
+    int noVotes = votingData.values.where((vote) => vote == 'no').length;
+
+    return selectedMember != null
+        ? Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Current Voting Results:'),
+              ListTile(
+                leading: Icon(Icons.check_circle, color: Colors.green),
+                title: Text('Yes'),
+                trailing: Text(yesVotes.toString()),
+              ),
+              ListTile(
+                leading: Icon(Icons.cancel, color: Colors.red),
+                title: Text('No'),
+                trailing: Text(noVotes.toString()),
+              ),
+            ],
+          )
+        : SizedBox.shrink();
   }
 }
