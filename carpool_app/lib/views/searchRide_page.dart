@@ -96,6 +96,7 @@ class _SearchRidePageState extends State<SearchRidePage> {
 
   @override
   Widget build(BuildContext context) {
+    print("[LOG] Search page opened");
     return Scaffold(
       appBar: TopBar(title: 'Search a ride', showBackButton: false),
       body: Container(
