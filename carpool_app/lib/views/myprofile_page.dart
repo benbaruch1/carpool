@@ -304,20 +304,62 @@ class _ProfilePageState extends State<ProfilePage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Available Seats Information'),
-          content: Text(
-              'Please choose your number of seats available in your car, including you as a driver.\n'
-              'For example, \nif you have 4 seats for passengers, please choose 5 available seats.'),
+          title: Text('Available Seats Information',
+              style:
+                  TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
+          content: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Text(
+                  'Select the number of seats available for carpooling:',
+                ),
+                bulletPoint('Include the driver\'s seat.'),
+                bulletPoint('Exclude any baby or child seats.'),
+                bulletPoint('Count only seats with seatbelts.'),
+                SizedBox(height: 10),
+                Text('Examples:',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+                bulletPoint('5-seater car: Select 5.'),
+                bulletPoint('5-seater car with one baby seat: Select 4.'),
+              ],
+            ),
+          ),
           actions: <Widget>[
             TextButton(
-              child: Text('Close'),
+              child: Text('Close', style: TextStyle(color: Colors.green)),
               onPressed: () {
                 Navigator.of(context).pop();
               },
             ),
           ],
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+          backgroundColor: Colors.white,
+          elevation: 5,
         );
       },
+    );
+  }
+
+  Widget bulletPoint(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text("• ",
+              style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.green,
+                  fontWeight: FontWeight.bold)),
+          Expanded(
+            child: Text(text, style: TextStyle(fontSize: 14)),
+          ),
+        ],
+      ),
     );
   }
 }
