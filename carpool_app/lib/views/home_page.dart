@@ -53,6 +53,14 @@ class _HomePageState extends State<HomePage> {
             appBar: TopBar(
               title: _titles[_selectedIndex],
               showBackButton: false,
+              isHomePage: true,
+              onLogout: () async {
+                await _auth.signOut();
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => HomeWrapper()),
+                );
+              },
             ),
             body: _selectedIndex == 0
                 ? _buildHomePage(context, myUser)

@@ -17,6 +17,8 @@ import 'package:carpool_app/widgets/small_custom_button.dart';
 import 'package:carpool_app/widgets/top_bar.dart';
 
 class GroupPage extends StatefulWidget {
+  static const String routeName = '/groupPage'; // Define the route name
+
   final Group group;
   final String currentUserId;
 
@@ -37,7 +39,6 @@ class _GroupPageState extends State<GroupPage> {
     NotificationPage(),
     ProfilePage(),
   ];
-
   @override
   Widget build(BuildContext context) {
     bool isMember = widget.group.members.contains(widget.currentUserId);
@@ -61,6 +62,17 @@ class _GroupPageState extends State<GroupPage> {
               TopBar(
                 title: widget.group.rideName,
                 showBackButton: true,
+                isGroupDetailsPage: true,
+                isMember: widget.group.members.contains(widget.currentUserId),
+                onLeaveGroup: () async {
+                  await _leaveGroup(context);
+                },
+                onJoinGroup: () async {
+                  await _joinGroup(context);
+                },
+                onReport: () async {
+                  _showVotingSystemPopup(context);
+                },
               ),
               Container(
                 color: Colors.grey[200],
@@ -80,8 +92,7 @@ class _GroupPageState extends State<GroupPage> {
           children: [
             // First tab: Details
             Container(
-              color: const Color.fromARGB(
-                  255, 255, 255, 255), // Set the background color to white
+              color: const Color.fromARGB(255, 255, 255, 255),
               child: Column(
                 children: [
                   Expanded(
@@ -98,14 +109,15 @@ class _GroupPageState extends State<GroupPage> {
                           _buildMeetingPoint('Third Meeting Point',
                               widget.group.thirdMeetingPoint),
                           SizedBox(height: 20),
-                          _buildChangePickupPointDropdown(),
-                          SizedBox(height: 20),
+                          if (isMember) ...[
+                            _buildChangePickupPointDropdown(),
+                            SizedBox(height: 20),
+                          ],
                           _buildTimesSection(widget.group.times),
                           SizedBox(height: 20),
                           _buildMembersAndPointsHeader(),
                           _buildMembersList(
                               widget.group.members, widget.group.userId),
-                          _buildReportIcon(),
                           SizedBox(height: 10),
                           FutureBuilder<DocumentSnapshot>(
                             future: FirebaseFirestore.instance
@@ -209,28 +221,6 @@ class _GroupPageState extends State<GroupPage> {
                       ),
                     ),
                   ),
-                  if (isMember)
-                    Padding(
-                      padding: const EdgeInsets.all(10.0),
-                      child: CustomButton(
-                        label: 'Leave',
-                        color: Colors.red,
-                        onPressed: () async {
-                          await _leaveGroup(context);
-                        },
-                      ),
-                    ),
-                  if (!isMember && !isFull)
-                    Padding(
-                      padding: const EdgeInsets.all(14.0),
-                      child: CustomButton(
-                        label: 'Join',
-                        color: Colors.green,
-                        onPressed: () async {
-                          await _joinGroup(context);
-                        },
-                      ),
-                    ),
                   if (isFull)
                     Padding(
                       padding: const EdgeInsets.all(14.0),
@@ -1526,8 +1516,6 @@ class _GroupPageState extends State<GroupPage> {
               )
             else
               _buildVotingOptions(selectedMember, votingData),
-            SizedBox(height: 20),
-            _buildVoteResults(votingData, selectedMember),
           ],
         );
       },
@@ -1607,24 +1595,56 @@ class _GroupPageState extends State<GroupPage> {
         var userData = snapshot.data!.data() as Map<String, dynamic>;
         String memberName = userData['firstName'];
 
+        // Count the number of "yes" and "no" votes
+        int yesVotes = votingData.values.where((vote) => vote == 'yes').length;
+        int noVotes = votingData.values.where((vote) => vote == 'no').length;
+
         return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Vote to kick $memberName:'),
+            Text(
+              'Vote to kick $memberName:',
+              style: TextStyle(fontSize: 14),
+            ),
             SizedBox(height: 10),
             Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 ElevatedButton(
                   onPressed: () => _castVote(selectedMember, true),
-                  child: Text('Yes'),
-                  style:
-                      ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                  child: Text(
+                    'Yes ($yesVotes)',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold, // Makes the text bold
+                      color: Colors.black, // Sets the text color to black
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    backgroundColor: Colors.green,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
                 ),
-                SizedBox(width: 20),
                 ElevatedButton(
                   onPressed: () => _castVote(selectedMember, false),
-                  child: Text('No'),
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                  child: Text(
+                    'No ($noVotes)',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold, // Makes the text bold
+                      color: Colors.black, // Sets the text color to black
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    backgroundColor: Colors.red,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -1707,31 +1727,6 @@ class _GroupPageState extends State<GroupPage> {
     Navigator.pop(context, true);
   }
 
-  Widget _buildVoteResults(
-      Map<String, dynamic> votingData, String? selectedMember) {
-    int yesVotes = votingData.values.where((vote) => vote == 'yes').length;
-    int noVotes = votingData.values.where((vote) => vote == 'no').length;
-
-    return selectedMember != null
-        ? Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Current Voting Results:'),
-              ListTile(
-                leading: Icon(Icons.check_circle, color: Colors.green),
-                title: Text('Yes'),
-                trailing: Text(yesVotes.toString()),
-              ),
-              ListTile(
-                leading: Icon(Icons.cancel, color: Colors.red),
-                title: Text('No'),
-                trailing: Text(noVotes.toString()),
-              ),
-            ],
-          )
-        : SizedBox.shrink();
-  }
-
   Widget _buildReportIcon() {
     return Row(
       children: [
@@ -1757,7 +1752,7 @@ class _GroupPageState extends State<GroupPage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Kick Voting System'),
+          title: Text('Voting System'),
           content: SingleChildScrollView(
             child: _buildVotingSystem(), //The voting system
           ),
