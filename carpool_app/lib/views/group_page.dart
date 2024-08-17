@@ -622,13 +622,15 @@ class _GroupPageState extends State<GroupPage> {
             SnackBar(content: Text('Group has been deleted')),
           );
         } else {
-          // Remove the member and their points
+          // Remove the member, their points, and their pickup point
           await FirebaseFirestore.instance
               .collection('groups')
               .doc(widget.group.uid)
               .update({
             'members': FieldValue.arrayRemove([userIdToRemove]),
             'memberPoints.$userIdToRemove': FieldValue.delete(),
+            'pickupPoints.$userIdToRemove':
+                FieldValue.delete(), // Remove the pickup point
           });
 
           if (userIdToRemove == widget.currentUserId) {
@@ -636,9 +638,9 @@ class _GroupPageState extends State<GroupPage> {
               SnackBar(content: Text('You have left the group')),
             );
           }
-          //after the current user leave the group
+          // After the current user leaves the group
           if (members.length == 2) {
-            //if there only 1 member left
+            // If there's only 1 member left
             String remainMemberId =
                 members.firstWhere((member) => member != widget.currentUserId);
             await FirebaseFirestore.instance
