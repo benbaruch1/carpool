@@ -44,6 +44,7 @@ class _CreateRidePageState extends State<CreateRidePage> {
   int _meetingPointsCount = 1;
   int _maxSeats = 5;
   int _availableSeats = 5;
+  bool _isLoading = true;
 
   static List<Widget> _widgetOptions = <Widget>[
     HomePage(),
@@ -59,11 +60,10 @@ class _CreateRidePageState extends State<CreateRidePage> {
       departureTimes[day] = TextEditingController();
       returnTimes[day] = TextEditingController();
     }
-
     _fetchUserData();
   }
 
-  Future<Map<String, dynamic>> _fetchUserData() async {
+  Future<void> _fetchUserData() async {
     var user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       var snapshot = await FirebaseFirestore.instance
@@ -71,10 +71,17 @@ class _CreateRidePageState extends State<CreateRidePage> {
           .doc(user.uid)
           .get();
       if (snapshot.exists) {
-        return snapshot.data() ?? {};
+        var userData = snapshot.data() ?? {};
+        setState(() {
+          _maxSeats = userData['availableSeats'] ?? 5;
+          _availableSeats = _maxSeats;
+          _isLoading = false;
+        });
       }
     }
-    return {};
+    setState(() {
+      _isLoading = false;
+    });
   }
 
   Future<void> _createRide() async {
@@ -184,7 +191,7 @@ class _CreateRidePageState extends State<CreateRidePage> {
             .get();
         int maxSeats = snapshot.data()?['availableSeats'] ?? 5;
 
-        int selectedSeats = int.parse(_availableSeatsController.text);
+        int selectedSeats = _availableSeats;
 
         if (selectedSeats > maxSeats) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -310,145 +317,130 @@ class _CreateRidePageState extends State<CreateRidePage> {
         title: 'Create group',
         showBackButton: true,
       ),
-      body: FutureBuilder<Map<String, dynamic>>(
-        future: _fetchUserData(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Loading();
-          } else if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return Center(child: Text('No user data found'));
-          }
-
-          var userData = snapshot.data!;
-          _maxSeats = userData['availableSeats'] ?? 5;
-          if (_availableSeats > _maxSeats) {
-            _availableSeats = _maxSeats;
-          }
-
-          return Container(
-            color: Colors.white,
-            child: Center(
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: <Widget>[
-                        buildTextFieldWithAsterisk('Group name:',
-                            _rideNameController, true, Icons.group),
-                        SizedBox(height: 20),
-                        buildTextFieldWithAsterisk(
-                            'Set first meeting point:',
-                            _firstMeetingPointController,
-                            true,
-                            Icons.location_on),
-                        if (_meetingPointsCount > 1) SizedBox(height: 20),
-                        if (_meetingPointsCount > 1)
+      body: _isLoading
+          ? Loading()
+          : Container(
+              color: Colors.white,
+              child: Center(
+                child: SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: <Widget>[
+                          buildTextFieldWithAsterisk('Group name:',
+                              _rideNameController, true, Icons.group),
+                          SizedBox(height: 20),
                           buildTextFieldWithAsterisk(
-                              'Set second meeting point:',
-                              _secondMeetingPointController,
-                              false,
+                              'Set first meeting point:',
+                              _firstMeetingPointController,
+                              true,
                               Icons.location_on),
-                        if (_meetingPointsCount > 2) SizedBox(height: 20),
-                        if (_meetingPointsCount > 2)
-                          buildTextFieldWithAsterisk(
-                              'Set third meeting point:',
-                              _thirdMeetingPointController,
-                              false,
-                              Icons.location_on),
-                        SizedBox(height: 10),
-                        if (_meetingPointsCount < 3)
-                          TextButton.icon(
-                            onPressed: _addMeetingPoint,
-                            icon: Icon(Icons.add, color: Colors.green),
-                            label: Text(
-                              'Add another meeting point',
-                              style: TextStyle(color: Colors.green),
+                          if (_meetingPointsCount > 1) SizedBox(height: 20),
+                          if (_meetingPointsCount > 1)
+                            buildTextFieldWithAsterisk(
+                                'Set second meeting point:',
+                                _secondMeetingPointController,
+                                false,
+                                Icons.location_on),
+                          if (_meetingPointsCount > 2) SizedBox(height: 20),
+                          if (_meetingPointsCount > 2)
+                            buildTextFieldWithAsterisk(
+                                'Set third meeting point:',
+                                _thirdMeetingPointController,
+                                false,
+                                Icons.location_on),
+                          SizedBox(height: 10),
+                          if (_meetingPointsCount < 3)
+                            TextButton.icon(
+                              onPressed: _addMeetingPoint,
+                              icon: Icon(Icons.add, color: Colors.green),
+                              label: Text(
+                                'Add another meeting point',
+                                style: TextStyle(color: Colors.green),
+                              ),
                             ),
+                          SizedBox(height: 20),
+                          buildSeatsPicker(),
+                          SizedBox(height: 20),
+                          Row(
+                            children: [
+                              Text(
+                                'Please select at least one day:',
+                                style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black),
+                              ),
+                              Text(
+                                '*',
+                                style:
+                                    TextStyle(color: Colors.red, fontSize: 24),
+                              ),
+                            ],
                           ),
-                        SizedBox(height: 20),
-                        buildSeatsPicker(),
-                        SizedBox(height: 20),
-                        Row(
-                          children: [
-                            Text(
-                              'Please select at least one day:',
-                              style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black),
-                            ),
-                            Text(
-                              '*',
-                              style: TextStyle(color: Colors.red, fontSize: 24),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 10),
-                        Wrap(
-                          spacing: 10,
-                          children: daysOfWeek.map((day) {
-                            return ChoiceChip(
-                              label: Text(day),
-                              selected: selectedDays.contains(day),
-                              onSelected: (bool selected) {
-                                setState(() {
-                                  if (selected) {
-                                    selectedDays.add(day);
-                                  } else {
-                                    selectedDays.remove(day);
-                                  }
-                                });
-                              },
-                              shape: RoundedRectangleBorder(
-                                side: BorderSide(color: Colors.green, width: 2),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              backgroundColor: Colors.transparent,
-                              selectedColor: Colors.green,
-                              labelStyle: TextStyle(
-                                color: selectedDays.contains(day)
-                                    ? Colors.white
-                                    : Colors.black,
-                              ),
+                          SizedBox(height: 10),
+                          Wrap(
+                            spacing: 10,
+                            children: daysOfWeek.map((day) {
+                              return ChoiceChip(
+                                label: Text(day),
+                                selected: selectedDays.contains(day),
+                                onSelected: (bool selected) {
+                                  setState(() {
+                                    if (selected) {
+                                      selectedDays.add(day);
+                                    } else {
+                                      selectedDays.remove(day);
+                                    }
+                                  });
+                                },
+                                shape: RoundedRectangleBorder(
+                                  side:
+                                      BorderSide(color: Colors.green, width: 2),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                backgroundColor: Colors.transparent,
+                                selectedColor: Colors.green,
+                                labelStyle: TextStyle(
+                                  color: selectedDays.contains(day)
+                                      ? Colors.white
+                                      : Colors.black,
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                          SizedBox(height: 20),
+                          ...selectedDays.map((day) {
+                            return Column(
+                              children: [
+                                Text("$day",
+                                    style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16)),
+                                buildTimePicker(
+                                    'Departure time:', departureTimes[day]!),
+                                buildTimePicker(
+                                    'Return time:', returnTimes[day]!),
+                                SizedBox(height: 10),
+                              ],
                             );
                           }).toList(),
-                        ),
-                        SizedBox(height: 20),
-                        ...selectedDays.map((day) {
-                          return Column(
-                            children: [
-                              Text("$day",
-                                  style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16)),
-                              buildTimePicker(
-                                  'Departure time:', departureTimes[day]!),
-                              buildTimePicker(
-                                  'Return time:', returnTimes[day]!),
-                              SizedBox(height: 10),
-                            ],
-                          );
-                        }).toList(),
-                        SizedBox(height: 20),
-                        CustomButton(
-                          label: 'Create',
-                          onPressed: _createRide,
-                        ),
-                        SizedBox(height: 20),
-                      ],
+                          SizedBox(height: 20),
+                          CustomButton(
+                            label: 'Create',
+                            onPressed: _createRide,
+                          ),
+                          SizedBox(height: 20),
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
-          );
-        },
-      ),
       bottomNavigationBar: BottomBar(
         selectedIndex: _selectedIndex,
         onItemTapped: _onItemTapped,
