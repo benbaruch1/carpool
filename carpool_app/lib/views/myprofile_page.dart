@@ -17,6 +17,13 @@ class _ProfilePageState extends State<ProfilePage> {
   int _selectedIndex = 3;
   String error = '';
 
+  // State variables for form fields
+  String _name = '';
+  String _address = '';
+  String _phoneNumber = '';
+  String _email = '';
+  int _availableSeats = 5;
+
   Future<Map<String, dynamic>> _fetchUserData() async {
     var user = FirebaseAuth.instance.currentUser;
     var snapshot = await FirebaseFirestore.instance
@@ -52,7 +59,18 @@ class _ProfilePageState extends State<ProfilePage> {
           }
 
           var userData = snapshot.data!;
-          return _buildProfileForm(userData);
+          // Initialize state variables with Firestore data
+          _name = userData['firstName'] ?? '';
+          _address = userData['address'] ?? '';
+          _phoneNumber = userData['phoneNumber'] ?? '';
+          _email = userData['email'] ?? '';
+          _availableSeats = userData['availableSeats'] ?? 5;
+
+          return StatefulBuilder(
+            builder: (BuildContext context, StateSetter setStateLocal) {
+              return _buildProfileForm(setStateLocal);
+            },
+          );
         },
       ),
       bottomNavigationBar: BottomBar(
@@ -62,17 +80,7 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildProfileForm(Map<String, dynamic> userData) {
-    TextEditingController _nameController =
-        TextEditingController(text: userData['firstName'] ?? '');
-    TextEditingController _addressController =
-        TextEditingController(text: userData['address'] ?? '');
-    TextEditingController _phoneNumberController =
-        TextEditingController(text: userData['phoneNumber'] ?? '');
-    TextEditingController _emailController =
-        TextEditingController(text: userData['email'] ?? '');
-    int _availableSeats = userData['availableSeats'] ?? 5;
-
+  Widget _buildProfileForm(StateSetter setStateLocal) {
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -109,7 +117,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                   SizedBox(height: 10),
                   TextFormField(
-                    controller: _emailController,
+                    initialValue: _email,
                     enabled: false,
                     decoration: InputDecoration(
                       labelText: 'Email',
@@ -119,24 +127,28 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                   SizedBox(height: 10),
                   TextFormField(
-                    controller: _nameController,
+                    initialValue: _name,
                     decoration: InputDecoration(
                       labelText: 'Name',
                     ),
+                    onChanged: (value) => setStateLocal(() => _name = value),
                   ),
                   SizedBox(height: 10),
                   TextFormField(
-                    controller: _phoneNumberController,
+                    initialValue: _phoneNumber,
                     decoration: InputDecoration(
                       labelText: 'Phone Number',
                     ),
+                    onChanged: (value) =>
+                        setStateLocal(() => _phoneNumber = value),
                   ),
                   SizedBox(height: 10),
                   TextFormField(
-                    controller: _addressController,
+                    initialValue: _address,
                     decoration: InputDecoration(
                       labelText: 'Address',
                     ),
+                    onChanged: (value) => setStateLocal(() => _address = value),
                   ),
                   SizedBox(height: 10),
                   Row(
@@ -168,7 +180,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             );
                           }).toList(),
                           onChanged: (val) {
-                            setState(() {
+                            setStateLocal(() {
                               _availableSeats = val!;
                             });
                           },
@@ -193,9 +205,9 @@ class _ProfilePageState extends State<ProfilePage> {
                               await _checkGroupsForSeats(_availableSeats);
                           if (canUpdate) {
                             _updateProfile(
-                              _nameController.text,
-                              _phoneNumberController.text,
-                              _addressController.text,
+                              _name,
+                              _phoneNumber,
+                              _address,
                               _availableSeats,
                             );
                           }

@@ -42,7 +42,8 @@ class _CreateRidePageState extends State<CreateRidePage> {
 
   int _selectedIndex = 0;
   int _meetingPointsCount = 1;
-  int? _maxSeats;
+  int _maxSeats = 5;
+  int _availableSeats = 5;
 
   static List<Widget> _widgetOptions = <Widget>[
     HomePage(),
@@ -287,20 +288,16 @@ class _CreateRidePageState extends State<CreateRidePage> {
 
   void _incrementSeats() {
     setState(() {
-      int currentSeats = int.parse(_availableSeatsController.text);
-      if (_maxSeats != null && currentSeats < _maxSeats!) {
-        currentSeats++;
-        _availableSeatsController.text = currentSeats.toString();
+      if (_availableSeats < _maxSeats) {
+        _availableSeats++;
       }
     });
   }
 
   void _decrementSeats() {
     setState(() {
-      int currentSeats = int.parse(_availableSeatsController.text);
-      if (currentSeats > 1) {
-        currentSeats--;
-        _availableSeatsController.text = currentSeats.toString();
+      if (_availableSeats > 1) {
+        _availableSeats--;
       }
     });
   }
@@ -326,7 +323,9 @@ class _CreateRidePageState extends State<CreateRidePage> {
 
           var userData = snapshot.data!;
           _maxSeats = userData['availableSeats'] ?? 5;
-          _availableSeatsController.text = _maxSeats.toString();
+          if (_availableSeats > _maxSeats) {
+            _availableSeats = _maxSeats;
+          }
 
           return Container(
             color: Colors.white,
@@ -579,15 +578,10 @@ class _CreateRidePageState extends State<CreateRidePage> {
                     ),
                     SizedBox(
                       width: 20,
-                      child: TextFormField(
-                        controller: _availableSeatsController,
-                        readOnly: true,
-                        decoration: InputDecoration(
-                          border: InputBorder.none,
-                          isDense: true,
-                          contentPadding: EdgeInsets.symmetric(vertical: 8.0),
-                        ),
+                      child: Text(
+                        _availableSeats.toString(),
                         textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 16),
                       ),
                     ),
                     IconButton(
