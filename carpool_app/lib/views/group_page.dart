@@ -761,42 +761,33 @@ class _GroupPageState extends State<GroupPage> {
 
         // Adding new user with point = 0
         memberPoints[widget.currentUserId] = 0;
-
         // Show dialog to select pickup point
         String selectedPickupPoint = await showDialog(
           context: context,
           builder: (BuildContext context) {
             return AlertDialog(
-              title: Text('Select Pickup Point'),
+              title: Center(
+                child: Text(
+                  'Select Pickup Point',
+                  style: TextStyle(
+                    color: Colors.green,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  ListTile(
-                    title: Text(widget.group.firstMeetingPoint),
-                    onTap: () {
-                      Navigator.of(context).pop(widget.group.firstMeetingPoint);
-                    },
-                  ),
+                  _buildPickupOption(widget.group.firstMeetingPoint, context),
                   if (widget.group.secondMeetingPoint.isNotEmpty)
-                    ListTile(
-                      title: Text(widget.group.secondMeetingPoint),
-                      onTap: () {
-                        Navigator.of(context)
-                            .pop(widget.group.secondMeetingPoint);
-                      },
-                    ),
+                    _buildPickupOption(
+                        widget.group.secondMeetingPoint, context),
                   if (widget.group.thirdMeetingPoint.isNotEmpty)
-                    ListTile(
-                      title: Text(widget.group.thirdMeetingPoint),
-                      onTap: () {
-                        Navigator.of(context)
-                            .pop(widget.group.thirdMeetingPoint);
-                      },
-                    ),
+                    _buildPickupOption(widget.group.thirdMeetingPoint, context),
                 ],
               ),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.all(Radius.circular(10)),
+                borderRadius: BorderRadius.all(Radius.circular(15)),
               ),
             );
           },
@@ -1184,19 +1175,20 @@ class _GroupPageState extends State<GroupPage> {
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.grey[200],
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                  color: Colors.grey[300] ?? Colors.grey,
-                  width: 1), // Provides a fallback
-            ),
-            padding: EdgeInsets.all(10.0),
-            child: Row(
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.grey[200],
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: Colors.grey[300] ?? Colors.grey,
+            width: 1,
+          ),
+        ),
+        padding: EdgeInsets.all(10.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
                 Icon(Icons.location_on, color: Colors.green, size: 24),
                 SizedBox(width: 10),
@@ -1224,50 +1216,58 @@ class _GroupPageState extends State<GroupPage> {
                 ),
               ],
             ),
-          ),
-          SizedBox(height: 10),
-          //Display the users relevant to this point within the box
-          ...users.map((user) => Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4.0),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  padding: EdgeInsets.all(10.0),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              user['name']!,
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black87,
-                              ),
-                            ),
-                            Text(
-                              'Phone: ${user['phone']}',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.black54,
-                              ),
-                            ),
-                          ],
+            SizedBox(height: 10),
+            Divider(color: Colors.grey),
+            ...users.map((user) => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4.0),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withOpacity(0.2),
+                          spreadRadius: 1,
+                          blurRadius: 5,
+                          offset: Offset(0, 2),
                         ),
-                      ),
-                      IconButton(
-                        icon: Icon(Icons.call, color: Colors.green),
-                        onPressed: () => _makePhoneCall(user['phone']!),
-                      ),
-                    ],
+                      ],
+                    ),
+                    padding: EdgeInsets.all(10.0),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                user['name']!,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                              Text(
+                                'Phone: ${user['phone']}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.black54,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.call, color: Colors.green),
+                          onPressed: () => _makePhoneCall(user['phone']!),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              )),
-        ],
+                )),
+          ],
+        ),
       ),
     );
   }
@@ -1636,8 +1636,8 @@ class _GroupPageState extends State<GroupPage> {
                     'No ($noVotes)',
                     style: TextStyle(
                       fontSize: 12,
-                      fontWeight: FontWeight.bold, // Makes the text bold
-                      color: Colors.black, // Sets the text color to black
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
                     ),
                   ),
                   style: ElevatedButton.styleFrom(
@@ -1768,6 +1768,35 @@ class _GroupPageState extends State<GroupPage> {
           ],
         );
       },
+    );
+  }
+
+  Widget _buildPickupOption(String meetingPoint, BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: GestureDetector(
+        onTap: () {
+          Navigator.of(context).pop(meetingPoint);
+        },
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.grey[200],
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.green, width: 1),
+          ),
+          padding: EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+          child: Center(
+            child: Text(
+              meetingPoint,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

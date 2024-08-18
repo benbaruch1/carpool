@@ -36,8 +36,7 @@ class _CreateRidePageState extends State<CreateRidePage> {
       TextEditingController();
   final TextEditingController _thirdMeetingPointController =
       TextEditingController();
-  final TextEditingController _availableSeatsController =
-      TextEditingController(text: '5');
+
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   int _selectedIndex = 0;
@@ -45,13 +44,6 @@ class _CreateRidePageState extends State<CreateRidePage> {
   int _maxSeats = 5;
   int _availableSeats = 5;
   bool _isLoading = true;
-
-  static List<Widget> _widgetOptions = <Widget>[
-    HomePage(),
-    MyRidesPage(),
-    NotificationPage(),
-    ProfilePage(),
-  ];
 
   @override
   void initState() {
@@ -332,27 +324,23 @@ class _CreateRidePageState extends State<CreateRidePage> {
                         children: <Widget>[
                           buildTextFieldWithAsterisk('Group name:',
                               _rideNameController, true, Icons.group),
-                          SizedBox(height: 20),
                           buildTextFieldWithAsterisk(
                               'Set first meeting point:',
                               _firstMeetingPointController,
                               true,
                               Icons.location_on),
-                          if (_meetingPointsCount > 1) SizedBox(height: 20),
                           if (_meetingPointsCount > 1)
                             buildTextFieldWithAsterisk(
                                 'Set second meeting point:',
                                 _secondMeetingPointController,
                                 false,
                                 Icons.location_on),
-                          if (_meetingPointsCount > 2) SizedBox(height: 20),
                           if (_meetingPointsCount > 2)
                             buildTextFieldWithAsterisk(
                                 'Set third meeting point:',
                                 _thirdMeetingPointController,
                                 false,
                                 Icons.location_on),
-                          SizedBox(height: 10),
                           if (_meetingPointsCount < 3)
                             TextButton.icon(
                               onPressed: _addMeetingPoint,
@@ -362,7 +350,7 @@ class _CreateRidePageState extends State<CreateRidePage> {
                                 style: TextStyle(color: Colors.green),
                               ),
                             ),
-                          SizedBox(height: 20),
+                          SizedBox(height: 10),
                           buildSeatsPicker(),
                           SizedBox(height: 20),
                           Row(
@@ -412,7 +400,7 @@ class _CreateRidePageState extends State<CreateRidePage> {
                               );
                             }).toList(),
                           ),
-                          SizedBox(height: 20),
+                          SizedBox(height: 10),
                           ...selectedDays.map((day) {
                             return Column(
                               children: [
