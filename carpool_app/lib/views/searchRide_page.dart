@@ -1,72 +1,25 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
+import 'package:carpool_app/controllers/search_ride_page_controller.dart';
 import 'package:carpool_app/models/group.dart';
 import 'package:carpool_app/views/group_page.dart';
-import 'package:carpool_app/services/database.dart';
 import 'package:carpool_app/widgets/custom_button.dart';
 import 'package:carpool_app/widgets/top_bar.dart';
 import 'package:carpool_app/widgets/bottom_bar.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
-class SearchRidePage extends StatefulWidget {
+class SearchRidePage extends StatelessWidget {
   @override
-  _SearchRidePageState createState() => _SearchRidePageState();
+  Widget build(BuildContext context) {
+    print("[LOG] Search page opened");
+    return ChangeNotifierProvider(
+      create: (_) => SearchRidePageController(),
+      child: _SearchRidePageContent(),
+    );
+  }
 }
 
-class _SearchRidePageState extends State<SearchRidePage> {
-  final TextEditingController _userNameController = TextEditingController();
-  final TextEditingController _meetingPointController = TextEditingController();
-  final TextEditingController _departureTimeController =
-      TextEditingController();
-  final TextEditingController _groupNameController = TextEditingController();
-  final List<String> selectedDays = [];
-  bool _showFullGroups = true;
-  Future<List<Group>>? _searchResults;
-  int _selectedIndex = 0;
-
-  ScrollController _scrollController = ScrollController();
-
-  DatabaseService databaseService =
-      DatabaseService(FirebaseAuth.instance.currentUser!.uid);
-
-  Future<void> _searchRides() async {
-    List<Group> results = await databaseService.searchGroups(
-      meetingPoint: _meetingPointController.text,
-      departureTime: _departureTimeController.text,
-      selectedDays: selectedDays,
-      userId: _userNameController.text,
-      rideName: _groupNameController.text,
-      showFullGroups: _showFullGroups,
-    );
-
-    setState(() {
-      _searchResults = Future.value(results);
-    });
-
-    //go down for search result
-    if (results.isNotEmpty) {
-      Future.delayed(Duration(milliseconds: 200), () {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent + 150,
-          duration: Duration(milliseconds: 10),
-          curve: Curves.easeInOut,
-        );
-      });
-    }
-  }
-
-  void _resetSearchFields() {
-    _userNameController.clear();
-    _meetingPointController.clear();
-    _departureTimeController.clear();
-    _groupNameController.clear();
-    setState(() {
-      selectedDays.clear();
-      _showFullGroups = true;
-      _searchResults = null;
-    });
-  }
-
+class _SearchRidePageContent extends StatelessWidget {
   void _navigateToGroupPage(BuildContext context, Group group) async {
     String currentUserId = FirebaseAuth.instance.currentUser!.uid;
 
@@ -78,69 +31,51 @@ class _SearchRidePageState extends State<SearchRidePage> {
     );
 
     if (result == true) {
-      _searchRides(); // Refresh the search results if the group was joined or left
+      Provider.of<SearchRidePageController>(context, listen: false)
+          .searchRides();
     }
-  }
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
-
-  Future<String> _fetchUserName(String userId) async {
-    DocumentSnapshot userSnapshot =
-        await FirebaseFirestore.instance.collection('users').doc(userId).get();
-    return userSnapshot['firstName'];
   }
 
   @override
   Widget build(BuildContext context) {
-    print("[LOG] Search page opened");
+    final controller = Provider.of<SearchRidePageController>(context);
+
     return Scaffold(
       appBar: TopBar(title: 'Search a ride', showBackButton: false),
       body: Container(
         color: Colors.white,
         child: Center(
           child: SingleChildScrollView(
-            controller: _scrollController,
+            controller: controller.scrollController,
             child: Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: <Widget>[
                   SizedBox(height: 20),
-                  _buildTextField('Group name:', _groupNameController,
+                  _buildTextField('Group name:', controller.groupNameController,
                       icon: Icons.directions_car),
                   SizedBox(height: 10),
                   _buildTextField(
-                      'User' + "'s" + ' first name:', _userNameController,
+                      'User\'s first name:', controller.userNameController,
                       icon: Icons.person),
                   SizedBox(height: 10),
-                  _buildTextField('Meeting point:', _meetingPointController,
+                  _buildTextField(
+                      'Meeting point:', controller.meetingPointController,
                       icon: Icons.location_on),
                   SizedBox(height: 10),
-                  Text(
-                    'Schedule:',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
+                  Text('Schedule:',
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   Wrap(
                     spacing: 10,
                     children: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
                         .map((day) {
                       return ChoiceChip(
                         label: Text(day),
-                        selected: selectedDays.contains(day),
-                        onSelected: (bool selected) {
-                          setState(() {
-                            if (selected) {
-                              selectedDays.add(day);
-                            } else {
-                              selectedDays.remove(day);
-                            }
-                            ;
-                          });
-                        },
+                        selected: controller.selectedDays.contains(day),
+                        onSelected: (bool selected) =>
+                            controller.toggleDay(day),
                         shape: RoundedRectangleBorder(
                           side: BorderSide(color: Colors.green, width: 2),
                           borderRadius: BorderRadius.circular(20),
@@ -148,7 +83,7 @@ class _SearchRidePageState extends State<SearchRidePage> {
                         backgroundColor: Colors.transparent,
                         selectedColor: Colors.green,
                         labelStyle: TextStyle(
-                          color: selectedDays.contains(day)
+                          color: controller.selectedDays.contains(day)
                               ? Colors.white
                               : Colors.black,
                         ),
@@ -156,23 +91,21 @@ class _SearchRidePageState extends State<SearchRidePage> {
                     }).toList(),
                   ),
                   SizedBox(height: 10),
-                  _buildTextField('Departure time:', _departureTimeController,
-                      icon: Icons.access_time, isTime: true),
+                  _buildTextField(
+                      'Departure time:', controller.departureTimeController,
+                      icon: Icons.access_time, isTime: true, context: context),
                   SizedBox(height: 20),
                   Row(
                     children: [
                       Checkbox(
-                        value: _showFullGroups,
-                        onChanged: (bool? value) {
-                          setState(() {
-                            _showFullGroups = value ?? true;
-                          });
-                        },
+                        value: controller.showFullGroups,
+                        onChanged: (bool? value) =>
+                            controller.setShowFullGroups(value ?? true),
                       ),
                       Text('Show also full groups '),
                       Spacer(),
                       ElevatedButton(
-                        onPressed: _resetSearchFields,
+                        onPressed: controller.resetSearchFields,
                         child: Text('Reset'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Color.fromARGB(70, 0, 255, 0),
@@ -185,167 +118,10 @@ class _SearchRidePageState extends State<SearchRidePage> {
                   SizedBox(height: 20),
                   CustomButton(
                     label: 'Search',
-                    onPressed: _searchRides,
+                    onPressed: controller.searchRides,
                   ),
                   SizedBox(height: 20),
-                  _searchResults != null
-                      ? FutureBuilder<List<Group>>(
-                          future: _searchResults,
-                          builder: (context, snapshot) {
-                            if (snapshot.connectionState ==
-                                ConnectionState.waiting) {
-                              return CircularProgressIndicator();
-                            } else if (snapshot.hasError) {
-                              return Text('Error: ${snapshot.error}');
-                            } else if (!snapshot.hasData ||
-                                snapshot.data!.isEmpty) {
-                              return Text('No rides found');
-                            } else {
-                              return ListView.builder(
-                                shrinkWrap: true,
-                                physics: NeverScrollableScrollPhysics(),
-                                itemCount: snapshot.data!.length,
-                                itemBuilder: (context, index) {
-                                  Group group = snapshot.data![index];
-                                  return FutureBuilder<String>(
-                                    future: _fetchUserName(group.userId),
-                                    builder: (context, userSnapshot) {
-                                      if (userSnapshot.connectionState ==
-                                          ConnectionState.waiting) {
-                                        return CircularProgressIndicator();
-                                      } else if (userSnapshot.hasError) {
-                                        return Text(
-                                            'Error: ${userSnapshot.error}');
-                                      } else {
-                                        String userName = userSnapshot.data!;
-                                        return GestureDetector(
-                                          onTap: () {
-                                            _navigateToGroupPage(
-                                                context, group);
-                                          },
-                                          child: Card(
-                                            margin: EdgeInsets.symmetric(
-                                                vertical: 10, horizontal: 15),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(15.0),
-                                              side: BorderSide(
-                                                  color: Colors.green,
-                                                  width: 2),
-                                            ),
-                                            child: Container(
-                                              padding: EdgeInsets.all(15),
-                                              decoration: BoxDecoration(
-                                                color: Color.fromARGB(
-                                                    255, 217, 239, 220),
-                                                borderRadius:
-                                                    BorderRadius.circular(15.0),
-                                              ),
-                                              child: Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  Text(
-                                                    group.rideName,
-                                                    style: TextStyle(
-                                                        fontSize: 18,
-                                                        fontWeight:
-                                                            FontWeight.bold),
-                                                  ),
-                                                  SizedBox(height: 10),
-                                                  Wrap(
-                                                    children: [
-                                                      Text(group
-                                                          .firstMeetingPoint),
-                                                      if (group
-                                                          .secondMeetingPoint
-                                                          .isNotEmpty)
-                                                        Icon(
-                                                            Icons.arrow_forward,
-                                                            color:
-                                                                Colors.green),
-                                                      if (group
-                                                          .secondMeetingPoint
-                                                          .isNotEmpty)
-                                                        Text(group
-                                                            .secondMeetingPoint),
-                                                      if (group
-                                                          .thirdMeetingPoint
-                                                          .isNotEmpty)
-                                                        Icon(
-                                                            Icons.arrow_forward,
-                                                            color:
-                                                                Colors.green),
-                                                      if (group
-                                                          .thirdMeetingPoint
-                                                          .isNotEmpty)
-                                                        Text(group
-                                                            .thirdMeetingPoint),
-                                                      Icon(Icons.arrow_forward,
-                                                          color: Colors.green),
-                                                      Icon(Icons.flag,
-                                                          color: Colors.green),
-                                                    ],
-                                                  ),
-                                                  SizedBox(height: 10),
-                                                  Text(
-                                                    'Days: ${group.selectedDays.join(', ')}',
-                                                    style:
-                                                        TextStyle(fontSize: 16),
-                                                  ),
-                                                  Divider(
-                                                    color: Colors.green,
-                                                    thickness: 1,
-                                                    indent: 5,
-                                                    endIndent: 5,
-                                                  ),
-                                                  SizedBox(height: 10),
-                                                  Row(
-                                                    children: [
-                                                      Icon(Icons.person,
-                                                          color: Colors.green),
-                                                      SizedBox(width: 5),
-                                                      Text(
-                                                          'Created by $userName'),
-                                                    ],
-                                                  ),
-                                                  SizedBox(height: 10),
-                                                  // Modified to show members out of availableSeats
-                                                  Row(
-                                                    children: [
-                                                      Icon(Icons.group,
-                                                          color: Colors.green),
-                                                      SizedBox(width: 5),
-                                                      Text(
-                                                          'Members: ${group.members.length}/${group.availableSeats}'),
-                                                      if (group
-                                                              .members.length >=
-                                                          group.availableSeats)
-                                                        Text(
-                                                          ' (FULL)',
-                                                          style: TextStyle(
-                                                              color: Colors.red,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .bold),
-                                                        ),
-                                                    ],
-                                                  ),
-                                                  // End of modification
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                        );
-                                      }
-                                    },
-                                  );
-                                },
-                              );
-                            }
-                          },
-                        )
-                      : Container(),
+                  _buildSearchResults(controller),
                   SizedBox(height: 20),
                 ],
               ),
@@ -354,14 +130,14 @@ class _SearchRidePageState extends State<SearchRidePage> {
         ),
       ),
       bottomNavigationBar: BottomBar(
-        selectedIndex: _selectedIndex,
-        onItemTapped: _onItemTapped,
+        selectedIndex: controller.selectedIndex,
+        onItemTapped: controller.setSelectedIndex,
       ),
     );
   }
 
   Widget _buildTextField(String label, TextEditingController controller,
-      {IconData? icon, bool isTime = false}) {
+      {IconData? icon, bool isTime = false, BuildContext? context}) {
     return Row(
       children: [
         Expanded(
@@ -373,50 +149,137 @@ class _SearchRidePageState extends State<SearchRidePage> {
               prefixIcon: icon != null ? Icon(icon, color: Colors.green) : null,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(15.0),
-                borderSide: BorderSide(
-                  color: Colors.green,
-                  width: 2.0,
-                ),
+                borderSide: BorderSide(color: Colors.green, width: 2.0),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(15.0),
-                borderSide: BorderSide(
-                  color: Colors.green,
-                  width: 2.0,
-                ),
+                borderSide: BorderSide(color: Colors.green, width: 2.0),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(15.0),
-                borderSide: BorderSide(
-                  color: Colors.green,
-                  width: 2.0,
-                ),
+                borderSide: BorderSide(color: Colors.green, width: 2.0),
               ),
               filled: true,
               fillColor: Colors.white,
             ),
-            onTap: isTime ? () => _selectTime(context, controller) : null,
+            onTap: isTime && context != null
+                ? () => Provider.of<SearchRidePageController>(context,
+                        listen: false)
+                    .selectTime(context, controller)
+                : null,
           ),
         ),
       ],
     );
   }
 
-  Future<void> _selectTime(
-      BuildContext context, TextEditingController controller) async {
-    final TimeOfDay? picked = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.now(),
-      builder: (BuildContext context, Widget? child) {
-        return MediaQuery(
-          data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
-          child: child!,
-        );
+  Widget _buildSearchResults(SearchRidePageController controller) {
+    if (controller.searchResults == null) {
+      return Container();
+    }
+
+    return FutureBuilder<List<Group>>(
+      future: controller.searchResults,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return CircularProgressIndicator();
+        } else if (snapshot.hasError) {
+          return Text('Error: ${snapshot.error}');
+        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return Text('No rides found');
+        } else {
+          return ListView.builder(
+            shrinkWrap: true,
+            physics: NeverScrollableScrollPhysics(),
+            itemCount: snapshot.data!.length,
+            itemBuilder: (context, index) {
+              Group group = snapshot.data![index];
+              return FutureBuilder<String>(
+                future: controller.fetchUserName(group.userId),
+                builder: (context, userSnapshot) {
+                  if (userSnapshot.connectionState == ConnectionState.waiting) {
+                    return CircularProgressIndicator();
+                  } else if (userSnapshot.hasError) {
+                    return Text('Error: ${userSnapshot.error}');
+                  } else {
+                    String userName = userSnapshot.data!;
+                    return _buildGroupCard(context, group, userName);
+                  }
+                },
+              );
+            },
+          );
+        }
       },
     );
-    if (picked != null) {
-      controller.text =
-          "${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}";
-    }
+  }
+
+  Widget _buildGroupCard(BuildContext context, Group group, String userName) {
+    return GestureDetector(
+      onTap: () => _navigateToGroupPage(context, group),
+      child: Card(
+        margin: EdgeInsets.symmetric(vertical: 10, horizontal: 15),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(15.0),
+          side: BorderSide(color: Colors.green, width: 2),
+        ),
+        child: Container(
+          padding: EdgeInsets.all(15),
+          decoration: BoxDecoration(
+            color: Color.fromARGB(255, 217, 239, 220),
+            borderRadius: BorderRadius.circular(15.0),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(group.rideName,
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              SizedBox(height: 10),
+              Wrap(
+                children: [
+                  Text(group.firstMeetingPoint),
+                  if (group.secondMeetingPoint.isNotEmpty)
+                    Icon(Icons.arrow_forward, color: Colors.green),
+                  if (group.secondMeetingPoint.isNotEmpty)
+                    Text(group.secondMeetingPoint),
+                  if (group.thirdMeetingPoint.isNotEmpty)
+                    Icon(Icons.arrow_forward, color: Colors.green),
+                  if (group.thirdMeetingPoint.isNotEmpty)
+                    Text(group.thirdMeetingPoint),
+                  Icon(Icons.arrow_forward, color: Colors.green),
+                  Icon(Icons.flag, color: Colors.green),
+                ],
+              ),
+              SizedBox(height: 10),
+              Text('Days: ${group.selectedDays.join(', ')}',
+                  style: TextStyle(fontSize: 16)),
+              Divider(
+                  color: Colors.green, thickness: 1, indent: 5, endIndent: 5),
+              SizedBox(height: 10),
+              Row(
+                children: [
+                  Icon(Icons.person, color: Colors.green),
+                  SizedBox(width: 5),
+                  Text('Created by $userName'),
+                ],
+              ),
+              SizedBox(height: 10),
+              Row(
+                children: [
+                  Icon(Icons.group, color: Colors.green),
+                  SizedBox(width: 5),
+                  Text(
+                      'Members: ${group.members.length}/${group.availableSeats}'),
+                  if (group.members.length >= group.availableSeats)
+                    Text(' (FULL)',
+                        style: TextStyle(
+                            color: Colors.red, fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

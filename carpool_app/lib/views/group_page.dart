@@ -1,3 +1,4 @@
+import 'package:carpool_app/controllers/notification_page_controller.dart';
 import 'package:carpool_app/shared/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -383,7 +384,7 @@ class _GroupPageState extends State<GroupPage> {
       });
 
       // Send a notification to the user about the updated pickup point
-      await sendNotification(
+      await NotificationPageController.sendNotification(
         title: 'Pickup Point Updated',
         body: 'Your pickup point has been updated to $selectedPickupPoint.',
         userId: widget.currentUserId,
@@ -679,7 +680,7 @@ class _GroupPageState extends State<GroupPage> {
           'groups': FieldValue.arrayRemove([widget.group.uid]),
         });
 
-        sendNotification(
+        NotificationPageController.sendNotification(
           title: 'You have left the group ' + widget.group.rideName,
           body: 'You have successfully left the group ' + widget.group.rideName,
           userId: userIdToRemove,
@@ -816,7 +817,7 @@ class _GroupPageState extends State<GroupPage> {
           'groups': FieldValue.arrayUnion([widget.group.uid]),
         });
 
-        sendNotification(
+        NotificationPageController.sendNotification(
           title: 'Joined to ' + widget.group.rideName + ' group successfully ',
           body:
               'You have successfully joined the group and selected your pickup point.',
@@ -892,7 +893,7 @@ class _GroupPageState extends State<GroupPage> {
           _startTime = DateTime.now();
         });
 
-        sendNotification(
+        NotificationPageController.sendNotification(
           title: 'You have started the ride ' + widget.group.rideName,
           body: 'You have successfully started the ride ' +
               widget.group.rideName +
@@ -930,7 +931,7 @@ class _GroupPageState extends State<GroupPage> {
             .doc(widget.group.uid)
             .get();
         inceasePoint(groupSnapshot['nextDriver']);
-        sendNotification(
+        NotificationPageController.sendNotification(
           title: 'You have finished the ride ' + widget.group.rideName,
           body: 'You have successfully finished the ride ' +
               widget.group.rideName,
@@ -953,7 +954,7 @@ class _GroupPageState extends State<GroupPage> {
         'memberPoints.$uid': FieldValue.increment(1),
       });
       print('Update successful');
-      sendNotification(
+      NotificationPageController.sendNotification(
           title: "Point Received! :)",
           body:
               "Thanks for your drive. You have received your point in the group '${widget.group.rideName}'.",
@@ -1337,7 +1338,7 @@ class _GroupPageState extends State<GroupPage> {
     List<String> userIds =
         group.members.where((userId) => userId != currentUserId).toList();
 
-    await sendNotificationToGroupMembers(
+    await NotificationPageController.sendNotificationToGroupMembers(
       title: 'The ride ' + group.rideName + ' has started!',
       body: 'Your ride to ' +
           group.rideName +
@@ -1352,7 +1353,7 @@ class _GroupPageState extends State<GroupPage> {
     List<String> userIds =
         group.members.where((userId) => userId != currentUserId).toList();
 
-    await sendNotificationToGroupMembers(
+    await NotificationPageController.sendNotificationToGroupMembers(
       title: 'Ride ' + group.rideName + ' has ended!',
       body: 'Your ride to ' +
           group.rideName +
@@ -1375,7 +1376,7 @@ class _GroupPageState extends State<GroupPage> {
       // Filter out the current driver from the user IDs
       List<String> userIds =
           group.members.where((userId) => userId != currentUserId).toList();
-      await sendNotificationToGroupMembers(
+      await NotificationPageController.sendNotificationToGroupMembers(
         title: "New user join to " + group.rideName + " ride",
         body: "Welcome " + newUserName + " to the ride.",
         userIds: userIds,
@@ -1397,7 +1398,7 @@ class _GroupPageState extends State<GroupPage> {
         .where((userId) => userId != userIdToRemove)
         .toList();
 
-    await sendNotificationToGroupMembers(
+    await NotificationPageController.sendNotificationToGroupMembers(
       title: '$userName has left the group',
       body: '$userName has left the group ${widget.group.rideName}.',
       userIds: userIds,
@@ -1417,7 +1418,7 @@ class _GroupPageState extends State<GroupPage> {
     // Sending a notification to all other group members
     List<String> userIds =
         group.members.where((userId) => userId != removedUserId).toList();
-    await sendNotificationToGroupMembers(
+    await NotificationPageController.sendNotificationToGroupMembers(
       title: 'Member removed from the group',
       body:
           '$removedUserName has been removed from the group ${group.rideName}.',
@@ -1707,7 +1708,7 @@ class _GroupPageState extends State<GroupPage> {
         'voting': FieldValue.delete(),
       });
       // Sending a notification to the user who was removed from the group
-      await sendNotification(
+      await NotificationPageController.sendNotification(
         title: 'You were removed from the group',
         body: 'You have been removed from the group ${widget.group.rideName}.',
         userId: memberId,

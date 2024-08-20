@@ -1,26 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:carpool_app/controllers/notification_page_controller.dart';
 import 'package:carpool_app/widgets/top_bar.dart';
 import 'package:carpool_app/widgets/bottom_bar.dart';
 
-class NotificationPage extends StatefulWidget {
-  @override
-  _NotificationPageState createState() => _NotificationPageState();
-}
-
-class _NotificationPageState extends State<NotificationPage> {
-  int _selectedIndex = 2;
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
-
+class NotificationPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     print("[LOG] notif opened ");
+    return ChangeNotifierProvider(
+      create: (_) => NotificationPageController(),
+      child: _NotificationPageContent(),
+    );
+  }
+}
+
+class _NotificationPageContent extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final controller = Provider.of<NotificationPageController>(context);
+
     return Scaffold(
       appBar: TopBar(title: 'Notifications', showBackButton: false),
       body: Column(
@@ -30,15 +30,11 @@ class _NotificationPageState extends State<NotificationPage> {
             children: [
               IconButton(
                 icon: Icon(Icons.mark_email_read, color: Colors.green),
-                onPressed: () {
-                  _markAllAsRead(context);
-                },
+                onPressed: () => controller.markAllAsRead(context),
               ),
               IconButton(
                 icon: Icon(Icons.delete_forever, color: Colors.green),
-                onPressed: () {
-                  _deleteAllNotifications(context);
-                },
+                onPressed: () => controller.deleteAllNotifications(context),
               ),
             ],
           ),
@@ -48,69 +44,21 @@ class _NotificationPageState extends State<NotificationPage> {
         ],
       ),
       bottomNavigationBar: BottomBar(
-        selectedIndex: _selectedIndex,
-        onItemTapped: _onItemTapped,
+        selectedIndex: controller.selectedIndex,
+        onItemTapped: controller.setSelectedIndex,
       ),
     );
   }
-
-  void _markAllAsRead(BuildContext context) {
-    final String currentUserId = FirebaseAuth.instance.currentUser!.uid;
-    FirebaseFirestore.instance
-        .collection('notifications')
-        .where('userId', isEqualTo: currentUserId)
-        .get()
-        .then((snapshot) {
-      for (var doc in snapshot.docs) {
-        doc.reference.update({'isRead': true});
-      }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('All notifications marked as read')),
-      );
-    }).catchError((error) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to mark notifications as read')),
-      );
-    });
-  }
-
-  void _deleteAllNotifications(BuildContext context) {
-    final String currentUserId = FirebaseAuth.instance.currentUser!.uid;
-    FirebaseFirestore.instance
-        .collection('notifications')
-        .where('userId', isEqualTo: currentUserId)
-        .get()
-        .then((snapshot) {
-      for (var doc in snapshot.docs) {
-        doc.reference.delete();
-      }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('All notifications deleted')),
-      );
-    }).catchError((error) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to delete notifications')),
-      );
-    });
-  }
 }
 
-class NotificationList extends StatefulWidget {
-  @override
-  _NotificationListState createState() => _NotificationListState();
-}
-
-class _NotificationListState extends State<NotificationList> {
-  final String currentUserId = FirebaseAuth.instance.currentUser!.uid;
-
+class NotificationList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final controller =
+        Provider.of<NotificationPageController>(context, listen: false);
+
     return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('notifications')
-          .where('userId', isEqualTo: currentUserId)
-          .orderBy('timestamp', descending: true)
-          .snapshots(),
+      stream: controller.getNotificationsStream(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Center(child: CircularProgressIndicator());
@@ -139,6 +87,8 @@ class NotificationTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final controller =
+        Provider.of<NotificationPageController>(context, listen: false);
     Map<String, dynamic> data = notification.data() as Map<String, dynamic>;
     bool isRead = data['isRead'] ?? false;
 
@@ -161,60 +111,10 @@ class NotificationTile extends StatelessWidget {
         subtitle: Text(data['body'] ?? 'No Body'),
         trailing: IconButton(
           icon: Icon(Icons.delete),
-          onPressed: () {
-            FirebaseFirestore.instance
-                .collection('notifications')
-                .doc(notification.id)
-                .delete();
-          },
+          onPressed: () => controller.deleteNotification(notification.id),
         ),
-        onTap: () {
-          FirebaseFirestore.instance
-              .collection('notifications')
-              .doc(notification.id)
-              .update({'isRead': true});
-        },
+        onTap: () => controller.markAsRead(notification.id),
       ),
     );
-  }
-}
-
-Future<void> sendNotification({
-  required String title,
-  required String body,
-  required String userId,
-}) async {
-  try {
-    await FirebaseFirestore.instance.collection('notifications').add({
-      'title': title,
-      'body': body,
-      'userId': userId,
-      'timestamp': FieldValue.serverTimestamp(),
-      'isRead': false,
-    });
-    print('Notification sent successfully');
-  } catch (e) {
-    print('Failed to send notification: $e');
-  }
-}
-
-Future<void> sendNotificationToGroupMembers({
-  required String title,
-  required String body,
-  required List<String> userIds,
-}) async {
-  try {
-    for (String userId in userIds) {
-      await FirebaseFirestore.instance.collection('notifications').add({
-        'title': title,
-        'body': body,
-        'userId': userId,
-        'timestamp': FieldValue.serverTimestamp(),
-        'isRead': false,
-      });
-    }
-    print('Notifications sent successfully');
-  } catch (e) {
-    print('Failed to send notifications: $e');
   }
 }
