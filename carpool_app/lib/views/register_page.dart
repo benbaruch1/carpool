@@ -77,7 +77,9 @@ class _RegisterPageState extends State<RegisterPage> {
                           }, 'Enter a valid phone number', false,
                               validatePhoneNumber),
                           SizedBox(height: 20),
-                          buildTextField('Address', (val) {
+                          buildTextField(
+                              'Address (city -> street -> house number)',
+                              (val) {
                             setState(() => address = val);
                           }, 'Enter your address', false),
                           SizedBox(height: 20),

@@ -273,7 +273,67 @@ class CreateRidePageController extends ChangeNotifier {
     }
   }
 
-  void showInfoDialog(BuildContext context) {
+  void showMeetingPointsInfoDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(
+            'Meeting Points Information',
+            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Text(
+                    'Important considerations for setting your meeting points:'),
+                _bulletPoint(
+                    'Choose locations that are easily identifiable and accessible.'),
+                _bulletPoint(
+                    'The meeting points should be convenient and relatively central for all group members.'),
+                _bulletPoint(
+                    'Ensure the locations have reasonable parking or pick-up/drop-off areas.'),
+                SizedBox(height: 10),
+                Text('Key rules:',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+                _bulletPoint(
+                    'Once a group is created, these points are fixed and cannot be changed.'),
+                _bulletPoint(
+                    'Passengers can be picked up or dropped off only at these designated points.'),
+                _bulletPoint(
+                    'Upon joining a group, each member can choose one station from the available meeting points.'),
+                SizedBox(height: 10),
+                Text('Examples of suitable locations:',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+                _bulletPoint(
+                    'Public parking lots, central landmarks, or main intersections.'),
+                _bulletPoint(
+                    'Locations that are easy to reach by all members and have low traffic.'),
+                _bulletPoint('Kiryat Bialik, Derekh Akko Haifa, 192 '),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Close', style: TextStyle(color: Colors.green)),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+          backgroundColor: Colors.white,
+          elevation: 5,
+        );
+      },
+    );
+  }
+
+  void showSeatsInfoDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
