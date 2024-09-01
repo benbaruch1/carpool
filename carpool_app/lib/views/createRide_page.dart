@@ -47,13 +47,6 @@ class _CreateRidePageContent extends StatelessWidget {
                               controller.firstMeetingPointController,
                               true,
                               Icons.location_on),
-                          IconButton(
-                            icon: Icon(Icons.info, color: Colors.green),
-                            onPressed: () =>
-                                controller.showMeetingPointsInfoDialog(context),
-                            padding: EdgeInsets.zero,
-                            constraints: BoxConstraints(),
-                          ),
                           if (controller.meetingPointsCount > 1)
                             _buildTextFieldWithAsterisk(
                                 'Set second meeting point:',
