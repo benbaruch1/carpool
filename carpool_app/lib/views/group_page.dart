@@ -678,9 +678,22 @@ class _GroupPageState extends State<GroupPage> {
   }
 
   Future<void> _showRouteDialog() async {
+    // Fetch the details of the pickup points
     List<Map<String, String>> pickupDetails =
         await _controller.getPickupPointDetails();
 
+    // Group the pickup details by pickup point
+    Map<String, List<Map<String, String>>> groupedDetails = {};
+    for (var detail in pickupDetails) {
+      String pickupPoint = detail['pickupPoint']!;
+      if (groupedDetails.containsKey(pickupPoint)) {
+        groupedDetails[pickupPoint]!.add(detail);
+      } else {
+        groupedDetails[pickupPoint] = [detail];
+      }
+    }
+
+    // Display the dialog with route details
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -698,6 +711,7 @@ class _GroupPageState extends State<GroupPage> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
+                    // Display the start time of the ride, if available
                     if (_controller.startTime != null)
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -711,6 +725,7 @@ class _GroupPageState extends State<GroupPage> {
                                 fontSize: 24, fontWeight: FontWeight.bold),
                           ),
                           SizedBox(height: 20),
+                          // Display the elapsed time since the ride started
                           StreamBuilder<int>(
                             stream:
                                 Stream.periodic(Duration(seconds: 1), (i) => i),
@@ -726,12 +741,14 @@ class _GroupPageState extends State<GroupPage> {
                           SizedBox(height: 20),
                         ],
                       ),
-                    ...pickupDetails
-                        .map((detail) => _buildStyledRoutePoint(detail)),
+                    // Display the grouped pickup details
+                    ...groupedDetails.entries.map((entry) =>
+                        _buildStyledRoutePoint(entry.key, entry.value)),
                   ],
                 ),
               ),
               actions: <Widget>[
+                // OK button to close the dialog
                 TextButton(
                   child: Text("OK", style: TextStyle(color: Colors.green)),
                   onPressed: () {
@@ -749,7 +766,8 @@ class _GroupPageState extends State<GroupPage> {
     );
   }
 
-  Widget _buildStyledRoutePoint(Map<String, String> detail) {
+  Widget _buildStyledRoutePoint(
+      String pickupPoint, List<Map<String, String>> details) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Container(
@@ -765,6 +783,7 @@ class _GroupPageState extends State<GroupPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Display the pickup point location
             Row(
               children: [
                 Icon(Icons.location_on, color: Colors.green, size: 24),
@@ -774,7 +793,7 @@ class _GroupPageState extends State<GroupPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        detail['pickupPoint']!,
+                        pickupPoint,
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -788,55 +807,61 @@ class _GroupPageState extends State<GroupPage> {
             ),
             SizedBox(height: 10),
             Divider(color: Colors.grey),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4.0),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(8),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withOpacity(0.2),
-                      spreadRadius: 1,
-                      blurRadius: 5,
-                      offset: Offset(0, 2),
-                    ),
-                  ],
-                ),
-                padding: EdgeInsets.all(10.0),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            detail['name']!,
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black87,
-                            ),
-                          ),
-                          Text(
-                            'Phone: ${detail['phone']}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.black54,
-                            ),
-                          ),
-                        ],
+            // Display the details of each user at this pickup point
+            ...details.map((detail) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4.0),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.2),
+                        spreadRadius: 1,
+                        blurRadius: 5,
+                        offset: Offset(0, 2),
                       ),
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.call, color: Colors.green),
-                      onPressed: () =>
-                          _controller.makePhoneCall(detail['phone']!),
-                    ),
-                  ],
+                    ],
+                  ),
+                  padding: EdgeInsets.all(10.0),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Display the user's name
+                            Text(
+                              detail['name']!,
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            // Display the user's phone number
+                            Text(
+                              'Phone: ${detail['phone']}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.black54,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Button to initiate a phone call to the user
+                      IconButton(
+                        icon: Icon(Icons.call, color: Colors.green),
+                        onPressed: () =>
+                            _controller.makePhoneCall(detail['phone']!),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ),
+              );
+            }).toList(),
           ],
         ),
       ),
