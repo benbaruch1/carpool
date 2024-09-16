@@ -1,12 +1,12 @@
 
 ## CarPool Project
 
-The CarPool project is a ride-sharing application aimed at assisting drivers in finding shared rides to Ort Braude College. The app allows drivers to create and join ride groups based on various criteria.
+The CarPool project is a ride-sharing application aimed at assisting **drivers** in finding shared rides to work or university. The app allows drivers to create and join ride groups based on various criteria.
 
 
 ## Features
 
-- User Registration & Login: Users can sign up and log in. Every user is a driver in the system.
+- User Registration & Login: Users can sign up and log in. Every user is a **driver** in the system.
 
 
 - Driver Profile: Each driver is characterized by their name, address, and phone number.
@@ -36,17 +36,17 @@ The CarPool project is a ride-sharing application aimed at assisting drivers in 
 - Pickup Points:
     - Each ride group has three predefined pickup points selected by the group creator.
     - Each participant can choose their fixed pickup point from these three options.
-
-
-
-
-
-
-
-
-
 ## Technologies Used
 - Dart: The main programming language.
 - Flutter: The framework used for building the mobile app.
 - OpenStreetMap: Integrated for map functionality, allowing users to view and select pickup points on an interactive map.
 - VS Code: The development environment.
+- 
+## Video Demonstration
+
+
+
+
+
+https://github.com/user-attachments/assets/1a2b332e-0320-46f7-bdd3-764e7522d415
+
