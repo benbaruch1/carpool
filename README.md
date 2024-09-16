@@ -10,6 +10,7 @@ The CarPool project is a ride-sharing application aimed at assisting **drivers**
 
 
 - **Driver Profile:** Each driver is characterized by their name, address, and phone number.
+   Additionally, each user can modify the number of seats available in their vehicle.
 
 
 - **Create a Ride Group:**
@@ -36,10 +37,21 @@ The CarPool project is a ride-sharing application aimed at assisting **drivers**
 - **Pickup Points:**
     - Each ride group has three predefined pickup points selected by the group creator.
     - Each participant can choose their fixed pickup point from these three options.
+- **Notifications:**
+  
+   The system provides various alerts to keep users informed about ride activities. These include:
+    - Group Creation Alert: A notification is sent when a new group is created.
+    - User Joined Group Alert: A notification is sent when a new user joins the ride group.
+    - User Left Group Alert: A notification is sent when a user leaves the ride group.
+    - Pickup Point Change Alert: A notification is sent when a user changes their pickup point.
+    - Ride Start Alert: A notification is sent when the ride starts.
+    - Ride End Alert: A notification is sent when the ride ends.
+    - Point Received Alert: A notification is sent when a driver receives a point for completing a ride.
+
 ## Technologies Used
 - **Dart:** The main programming language.
 - **Flutter:** The framework used for building the mobile app.
-- **OpenStreetMap:** Integrated for map functionality, allowing users to view and select pickup points on an interactive map.
+- **OpenStreetMap:** Integrated for map functionality, allowing users to view the pickup points on an interactive map.
 - **VS Code:** The development environment.
   
 ## Video Demonstration
